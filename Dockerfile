@@ -22,8 +22,8 @@ ARG ARCH="amd64"
 
 # install CRDB
 RUN apt update
-RUN apt install wget tar curl -y
-RUN wget https://binaries.cockroachdb.com/cockroach-$CRDB_VERSION.linux-$ARCH.tgz
+RUN apt install tar curl xz-utils -y
+ADD https://binaries.cockroachdb.com/cockroach-$CRDB_VERSION.linux-$ARCH.tgz cockroach-$CRDB_VERSION.linux-$ARCH.tgz
 RUN tar -xvf cockroach-$CRDB_VERSION.linux-$ARCH.tgz
 RUN cp cockroach-$CRDB_VERSION.linux-$ARCH/cockroach /usr/local/bin/cockroach
 
@@ -37,5 +37,16 @@ RUN curl -1sLf 'https://dl.redpanda.com/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash
 # install redpanda console
 RUN curl -1sLf 'https://dl.redpanda.com/nzc4ZYQK3WRGd9sy/redpanda/cfg/setup/bash.deb.sh' | bash && apt-get install redpanda-console -y
 
-CMD ["/app/outbin"]
+ARG S6_OVERLAY_VERSION=3.1.4.1
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz
+
+COPY services.d /etc/services.d
+RUN chmod +x /etc/services.d/cockroach/run
+RUN chmod +x /etc/services.d/fanout/run
+RUN chmod +x /etc/services.d/redpanda/run
+
 COPY --from=build /app/outbin /app/
+ENTRYPOINT ["/init"]
