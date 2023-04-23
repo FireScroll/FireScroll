@@ -1,0 +1,18 @@
+version: '3'
+
+dotenv: ['.env']
+
+env:
+  DOCKER_BUILDKIT: "1"
+
+tasks:
+
+  default:
+    cmds:
+      - go run .
+  docker:
+    cmds:
+      - docker build . -t fanoutdb:latest --ssh default
+  linux_amd:
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build .
