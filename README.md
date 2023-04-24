@@ -1,6 +1,8 @@
 # FanoutDB
 
-The unkillable KV database with unlimited read throughput.
+The unkillable KV database with unlimited read throughput. 
+
+Perfect for configuration management at scale where you want global low-latency reads without caching or cold first reads.
 
 <!-- TOC -->
 * [FanoutDB](#fanoutdb)
@@ -18,23 +20,25 @@ The unkillable KV database with unlimited read throughput.
     * [Gossip](#gossip)
 <!-- TOC -->
 
-## Operations
+## API
 
-### PUT
+The API is HTTP/1.1 & 2 compatible, with all operations as a `POST` request and JSON bodies.
 
-Can add an `IF` condition on it for conditional
+### Put Record(s) `POST /put`
+
+Can add an `If` condition on it for conditional
 
 Can check for existence with `pk ≠ null`
 
-### GET
+### Get Record(s) `POST /get`
 
 Get record(s) by their `pk` and `sk` pairs. Multiple records can be fetched at the same time.
 
-### DELETE
+### Delete Record(s) `POST /delete`
 
-Delete a single record by pk and sk, can put an IF condition on it
+Delete record(s) by pk and sk, can put an IF condition on it
 
-### LIST
+### List Records `POST /list`
 
 Can have starts_after or ends_before to determine the direction, and prefix
 
@@ -42,11 +46,24 @@ Can specify a pk or a partition number. If pk then sk is the filter. If partitio
 
 Can use IF to filter rows, not on partition number
 
-### BATCH
+### Batch Put and Delete Records `POST /batch`
 
-Multiple `PUT` and `DELETE` operations can be sent in a single request, which will result in all operations being atomic.
+Multiple `Put` and `Delete` operations can be sent in a single request, which will result in all operations being atomic.
 
-If any condition fails, then all operations will be aborted.
+If any condition fails, then all operations will be aborted
+
+## The `If` statement
+
+`Put`, `Get`, `Delete`, and `List` operations can all take an optional `If` condition that will determine whether the operation is applied.
+
+The `If` condition must evaluate to a boolean (`true` or `false`), and is in [expr syntax](https://github.com/antonmedv/expr).
+
+The available top-level keys are:
+1. `pk`
+2. `sk`
+3. `data` (the top level JSON object, e.g. `{"key": "val"}` could be checked like `data.key == "val"`)
+4. `_created_at` - an internal column created when the record is first inserted, in unix ms
+5. `_updated_at` - an internal coluimn that is updated any time the record is updated, in unix ms
 
 ## Scaling read throughput
 
@@ -124,11 +141,23 @@ You can find more details in the [Architecture](#architecture) section.
 
 ## Architecture
 
+TLDR FanoutDB is different by delegating the distributed nature to the log, and playing dumb about materializing the log to snapshots. It them provides a nice API for conditional querying.
+
+By centralizing the writes to a single log cluster we can ensure low-latency durability of mutations, while downstream nodes pull those mutations at their own pace.
+
+Like other eventually consistent databases, this means that read-after-write is not guaranteed is determined by how quickly the mutation is propagated. This use case is acceptable for most KV requirements like serving configurations (DNS records, feature flags, etc.)
+
+FanoutDB optimizes for low-latency high-throughput reads from all points of presence, with the worst case performance being one network hop in the local cluster to serve the read.
+
+We are effectively decoupling the local WAL and the compaction to pages as would be found in a traditional DB.
+
+This also means that no caching is needed, since updates are propagated down to the nodes as fast as they can be consumed.
+
 ### Storage engine
 
 SQLite is used as the underlying storage engine. Each partition is a single SQLite database.
 
-Continuous incremental snapshots are 
+Continuous incremental snapshots are covered in the [Backups and Snapshotting section](#backups-and-snapshotting), and used for both disaster recovery and partition remapping.
 
 ### Raft
 
@@ -139,3 +168,9 @@ Raft is used within a local region to elect a single replica of a partition to m
 Gossip is used within a local region to
 
 ### Mapping log topic partitions to nodes
+
+In log terms, nodes always belong to a single topic and a single consumer group.
+
+A single node could (and most likely will) be responsible for multiple partitions of a topic. This is determined by strategy used by the log cluster. Nodes simply react to the partitions they are mapped to, and respond accordingly.
+
+When a node is unmapped from a partition, it will first stop the backup process (to ensure no in-progress backups are lost). It will then delete the local DB from disk and reclaim the space. It is important to ensure that at least one replica group performs backups, or data will be permanently lost once outside of the retention period of the topic.
