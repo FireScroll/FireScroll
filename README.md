@@ -13,6 +13,8 @@ Perfect for configuration management at scale where you want global low-latency 
     * [List Records `POST /list`](#list-records-post-list)
     * [Batch Put and Delete Records `POST /batch`](#batch-put-and-delete-records-post-batch)
   * [The `If` statement](#the-if-statement)
+    * [Examples:](#examples)
+      * [Check the](#check-the-)
   * [Scaling read throughput](#scaling-read-throughput)
     * [Scaling the replica group](#scaling-the-replica-group)
     * [Scaling the number of replica groups](#scaling-the-number-of-replica-groups)
@@ -65,7 +67,7 @@ If any condition fails, then all operations will be aborted
 
 ## The `If` statement
 
-`Put`, `Get`, `Delete`, and `List` operations can all take an optional `If` condition that will determine whether the operation is applied.
+`Put` and `Delete` can all take an optional `If` condition that will determine whether the operation is applied at the time that a node consumes the mutation.
 
 The `If` condition must evaluate to a boolean (`true` or `false`), and is in [expr syntax](https://github.com/antonmedv/expr).
 
@@ -73,8 +75,24 @@ The available top-level keys are:
 1. `pk`
 2. `sk`
 3. `data` (the top level JSON object, e.g. `{"key": "val"}` could be checked like `data.key == "val"`)
-4. `_created_at` - an internal column created when the record is first inserted, in unix ms
-5. `_updated_at` - an internal coluimn that is updated any time the record is updated, in unix ms
+4. `_created_at` - an internal column created when the record is first inserted, in unix ms. This is the time that the log received the mutation.
+5. `_updated_at` - an internal coluimn that is updated any time the record is updated, in unix ms. This is the time that the log received the mutation.
+
+If an `If` statement exists, the row will be loaded into the query engine.
+
+### Examples:
+
+#### Check existence of a record
+
+If you only want to `Put` if a record does not already exist, then you can use the `If` query:
+
+```expr
+pk == null
+```
+
+This checks that the primary key does not already exist.
+
+_Note: `null` and `nil` can be used interchangeably_
 
 ## Scaling read throughput
 
@@ -152,7 +170,9 @@ You can find more details in the [Architecture](#architecture) section.
 
 ## Architecture
 
-TLDR FanoutDB is different by delegating the distributed nature to the log, and playing dumb about materializing the log to snapshots. It them provides a nice API for conditional querying.
+TL,DR: FanoutDB is different by delegating the distributed nature to the log, and playing dumb about materializing the log to snapshots. It them provides a nice API for conditional querying.
+
+Even more TL,DR: it's a fancy wrapper around a log for fanning-out reads.
 
 By centralizing the writes to a single log cluster we can ensure low-latency durability of mutations, while downstream nodes pull those mutations at their own pace.
 
