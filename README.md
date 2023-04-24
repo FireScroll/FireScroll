@@ -28,6 +28,7 @@ Perfect for configuration management at scale where you want global low-latency 
     * [Raft](#raft)
     * [Gossip](#gossip)
     * [Mapping log topic partitions to nodes](#mapping-log-topic-partitions-to-nodes)
+  * [Performance and Benchmarking](#performance-and-benchmarking)
 <!-- TOC -->
 
 ## API
@@ -183,4 +184,8 @@ In log terms, nodes always belong to a single topic and a single consumer group.
 
 A single node could (and most likely will) be responsible for multiple partitions of a topic. This is determined by strategy used by the log cluster. Nodes simply react to the partitions they are mapped to, and respond accordingly.
 
-When a node is unmapped from a partition, it will first stop the backup process (to ensure no in-progress backups are lost). It will then delete the local DB from disk and reclaim the space. It is important to ensure that at least one replica group performs backups, or data will be permanently lost once outside of the retention period of the topic.
+When a node is unmapped from a partition, it will first stop the backup process (to ensure no in-progress backups are lost). It will then delete the local DB from disk and reclaim the space. It is important to ensure that at least one replica group performs backups, or data will be permanently lost once the retention period of the topic is passed.
+
+## Performance and Benchmarking
+
+TODO
