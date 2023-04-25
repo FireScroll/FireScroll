@@ -33,6 +33,10 @@ Perfect for configuration management at scale where you want global low-latency 
   * [Performance and Benchmarking](#performance-and-benchmarking)
 <!-- TOC -->
 
+## Quick Note
+
+Redpanda and Kafka are used pretty interchangeably here. They mean the same thing, and any differences (e.g. configuration properties) will be noted.
+
 ## API
 
 The API is HTTP/1.1 & 2 compatible, with all operations as a `POST` request and JSON bodies.
@@ -67,10 +71,11 @@ If any condition fails, then all operations will be aborted
 
 ## Configuration
 
-| Env Var         | Type  | Description                                                                                                                                                  | Required | Default Value |
-|-----------------|-------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------------|
-| `REPLICA_GROUP` | string | The name of the replica group, directly used as the Kafka consumer group name.                                                                               | Yes      |               |
-| `BACKUP`         | bool  | Whether this node will create backups of its partitions. Set to `true` to enable backups.<br/>See [the backups section for more](#backups-and-snapshotting). | No       |               |
+| Env Var            | Type   | Description                                                                                                                                                                                          | Required | Default Value |
+|--------------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------------|
+| `REPLICA_GROUP`    | string | The name of the replica group, directly used as the Kafka consumer group name.                                                                                                                       | Yes      |               |
+| `BACKUP`           | bool   | Whether this node will create backups of its partitions. Set to `true` to enable backups. See [the backups section for more](#backups-and-snapshotting).                                             | No       |               |
+| `KAFKA_SESSION_MS` | int    | The session timeout in milliseconds used for the Kafka consumer. See [recommended settings](#recommended-redpandakafka-settings) for more as you will probably need to adjust your cluster settings. | No       | 60000         |
 
 
 ## The `If` statement
@@ -184,6 +189,8 @@ This allows for multiple backup strategies such as:
 You should choose a strategy depending on your needs.
 
 ## Recommended Redpanda/Kafka Settings
+
+Make sure that the `group_max_session_timeout_ms` and `group_min_session_timeout_ms` range in Redpanda (Kafka uses `.` instead of `_`) allows for your `KAFKA_SESSION_MS` env var value (default `60000`). Redpanda uses a `30000` max so it will need to be adjusted.
 
 TODO
 
