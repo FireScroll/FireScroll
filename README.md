@@ -12,9 +12,10 @@ Perfect for configuration management at scale where you want global low-latency 
     * [Delete Record(s) `POST /delete`](#delete-records-post-delete)
     * [List Records `POST /list`](#list-records-post-list)
     * [Batch Put and Delete Records `POST /batch`](#batch-put-and-delete-records-post-batch)
+  * [Configuration](#configuration)
   * [The `If` statement](#the-if-statement)
     * [Examples:](#examples)
-      * [Check the](#check-the-)
+      * [Check existence of a record](#check-existence-of-a-record)
   * [Scaling read throughput](#scaling-read-throughput)
     * [Scaling the replica group](#scaling-the-replica-group)
     * [Scaling the number of replica groups](#scaling-the-number-of-replica-groups)
@@ -27,7 +28,6 @@ Perfect for configuration management at scale where you want global low-latency 
   * [Backups and Snapshotting](#backups-and-snapshotting)
   * [Architecture](#architecture)
     * [Storage engine](#storage-engine)
-    * [Raft](#raft)
     * [Gossip](#gossip)
     * [Mapping log topic partitions to nodes](#mapping-log-topic-partitions-to-nodes)
   * [Performance and Benchmarking](#performance-and-benchmarking)
@@ -64,6 +64,14 @@ Can use IF to filter rows, not on partition number
 Multiple `Put` and `Delete` operations can be sent in a single request, which will result in all operations being atomic.
 
 If any condition fails, then all operations will be aborted
+
+## Configuration
+
+| Env Var         | Type  | Description                                                                                                                                                  | Required | Default Value |
+|-----------------|-------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------------|
+| `REPLICA_GROUP` | string | The name of the replica group, directly used as the Kafka consumer group name.                                                                               | Yes      |               |
+| `BACKUP`         | bool  | Whether this node will create backups of its partitions. Set to `true` to enable backups.<br/>See [the backups section for more](#backups-and-snapshotting). | No       |               |
+
 
 ## The `If` statement
 
@@ -164,9 +172,16 @@ Nodes will elect a single instance of a replica within a region to manage backup
 
 Backups are also used as snapshots for partition-shuffling. When a partition is remapped to another node (either via scaling or recovery), the node will first restore the partition from the litestream backup. It will then reset the partition checkpoint to the time of the backup, and consume the log from there. This results in a faster recovery, and the topic can expire records over time, preventing unbound log growth.
 
-Backups can be disabled with the `BACKUPS_DISABLED=true` env var if you only want to have a single region manage backups, and other regions can pull from that single S3 bucket. This will also disable raft. By default, all regions are expected to have their own local S3 bucket for faster upload and download times, as well as increased availability.
+Backups can be explicitly enabled with `BACKUP=true` env var. Backups should be enabled at the replica-group level, and all nodes within the same replica group should have the same `BACKUP` value. Backups are named via the `REPLICA_GROUP` env var, so distinct regions should use distinct buckets if you plan on having multiple backup replica groups.
 
-You can find more details in the [Architecture](#architecture) section.
+According to litestream [colliding backups will not corrupt, but are also just a bad idea.](https://litestream.io/how-it-works/#:~:text=This%20approach%20also%20has%20the%20benefit%20that%20two%20servers%20that%20accidentally%20share%20the%20same%20replica%20destination%20will%20not%20overwrite%20each%20other%E2%80%99s%20data.%20However%2C%20note%20that%20it%20is%20not%20recommended%20to%20replicate%20two%20databases%20to%20the%20same%20exact%20replica%20path.)
+
+This allows for multiple backup strategies such as:
+
+1. A single replica group in a single region is marked for backing up, and other groups and regions point to that S3 path for restore. This results in less redundancy, but less bandwidth and storage used
+2. A single replica group in each region is marked, and the local region points to that. This results in more redundancy and faster restores, but increased storage usage and bandwidth.
+
+You should choose a strategy depending on your needs.
 
 ## Architecture
 
@@ -189,10 +204,6 @@ This also means that no caching is needed, since updates are propagated down to 
 SQLite is used as the underlying storage engine. Each partition is a single SQLite database.
 
 Continuous incremental snapshots are covered in the [Backups and Snapshotting section](#backups-and-snapshotting), and used for both disaster recovery and partition remapping.
-
-### Raft
-
-Raft is used within a local region to elect a single replica of a partition to manage backups. No messages are sent over raft, it is purely used for leader election.
 
 ### Gossip
 

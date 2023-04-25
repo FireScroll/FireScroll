@@ -5,5 +5,8 @@ type (
 	// It also manages gossip participation
 	LogConsumer struct {
 		ConsumerGroup string
+
+		// ManagedPartitions are the partitions that are managed on this node
+		ManagedPartitions []*Partition
 	}
 )
