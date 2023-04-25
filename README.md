@@ -183,6 +183,12 @@ This allows for multiple backup strategies such as:
 
 You should choose a strategy depending on your needs.
 
+## Recommended Redpanda/Kafka Settings
+
+TODO
+
+Set session timeout high enough for restart of nodes.
+
 ## Architecture
 
 TL,DR: FanoutDB is different by delegating the distributed nature to the log, and playing dumb about materializing the log to snapshots. It them provides a nice API for conditional querying.
@@ -205,6 +211,13 @@ SQLite is used as the underlying storage engine. Each partition is a single SQLi
 
 Continuous incremental snapshots are covered in the [Backups and Snapshotting section](#backups-and-snapshotting), and used for both disaster recovery and partition remapping.
 
+### Tables
+
+2 tables are created:
+
+1. For storing the materialized mutation log (where your data is stored): `log_data`
+2. For keeping track of the latest value from Kafka (using the Kafka write timestamp): `offsets`
+
 ### Gossip
 
 Gossip is used within a local region to
@@ -216,6 +229,14 @@ In log terms, nodes always belong to a single topic and a single consumer group.
 A single node could (and most likely will) be responsible for multiple partitions of a topic. This is determined by strategy used by the log cluster. Nodes simply react to the partitions they are mapped to, and respond accordingly.
 
 When a node is unmapped from a partition, it will first stop the backup process (to ensure no in-progress backups are lost). It will then delete the local DB from disk and reclaim the space. It is important to ensure that at least one replica group performs backups, or data will be permanently lost once the retention period of the topic is passed.
+
+### Partition initialization process
+
+When a partition is initialized (node starting) it follows this order:
+
+1. Will use the local DB if it exists and has a timestamp >= snapshot timestamp. Continue consuming log from latest mutation in local DB.
+2. Will use the snapshot in S3 if it is newer than local DB or local DB does not exist. Continue consuming log from latest mutation in snapshot.
+3. Will start consuming from Kafka, and throw warning log that it is creating a local DB.
 
 ## Performance and Benchmarking
 
