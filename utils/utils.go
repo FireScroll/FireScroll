@@ -26,3 +26,12 @@ func MustEnvOrDefaultInt64(env string, defaultVal int64) int64 {
 	}
 	return int64(intVar)
 }
+
+// MustEnv will exit if `env` is not provided
+func MustEnv(env string) string {
+	res := os.Getenv(env)
+	if res == "" {
+		log.Fatalf("missing environment variable %s", env)
+	}
+	return res
+}

@@ -4,10 +4,12 @@ import (
 	"context"
 	"github.com/danthegoodman1/FanoutDB/gologger"
 	"github.com/danthegoodman1/FanoutDB/internal"
+	"github.com/danthegoodman1/FanoutDB/log_consumer"
 	"github.com/danthegoodman1/FanoutDB/utils"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -24,10 +26,20 @@ func main() {
 		return internal.StartServer()
 	})
 
+	var logConsumer *log_consumer.LogConsumer
+	g.Go(func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+		lc, err := log_consumer.NewLogConsumer(ctx, utils.Env_Namespace, utils.Env_ReplicaGroupName, strings.Split("localhost:19092,localhost:29092,localhost:39092", ","), utils.Env_KafkaSessionMs)
+		logConsumer = lc
+		return err
+	})
+
 	err := g.Wait()
 	if err != nil {
-		logger.Error().Err(err).Msg("Error starting services")
+		logger.Fatal().Err(err).Msg("Error starting services, exiting")
 	}
+	logger.Info().Msg("all services started")
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -40,6 +52,9 @@ func main() {
 		time.Sleep(time.Second * time.Duration(utils.Env_SleepSeconds))
 		logger.Info().Msgf("slept for %ds, exiting", utils.Env_SleepSeconds)
 	}
+
+	logger.Debug().Msg("closing kafka client")
+	logConsumer.Client.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(utils.Env_SleepSeconds))
 	defer cancel()
