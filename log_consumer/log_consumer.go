@@ -36,6 +36,8 @@ type (
 		AdminClient      *kadm.Client
 		AdminTicker      *time.Ticker
 		NumPartitions    int64
+
+		shuttingDown bool
 	}
 
 	PartitionMessage struct {
@@ -90,8 +92,9 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	time.Sleep(time.Second)
 
 	go consumer.pollTopicInfo()
+	go consumer.launchPollRecordLoop()
 
-	records, err := pollRecords(ctx, partitionsClient)
+	records, err := simplePollRecords(ctx, partitionsClient)
 
 	if errors.Is(err, context.DeadlineExceeded) || len(records) == 0 {
 		logger.Info().Msg("did not find existing records topic, creating")
@@ -108,12 +111,12 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 			return nil, fmt.Errorf("error in partitionsClient.ProduceSync: %w", err)
 		}
 		logger.Debug().Msg("produced partition message, checking")
-		records, err = pollRecords(ctx, partitionsClient)
+		records, err = simplePollRecords(ctx, partitionsClient)
 		if err != nil {
-			return nil, fmt.Errorf("error in pollRecords (after publish): %w", err)
+			return nil, fmt.Errorf("error in simplePollRecords (after publish): %w", err)
 		}
 	} else if err != nil {
-		return nil, fmt.Errorf("error in pollRecords: %w", err)
+		return nil, fmt.Errorf("error in simplePollRecords: %w", err)
 	}
 
 	if len(records) == 0 {
@@ -134,7 +137,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	return consumer, nil
 }
 
-func pollRecords(ctx context.Context, client *kgo.Client) ([]*kgo.Record, error) {
+func simplePollRecords(ctx context.Context, client *kgo.Client) ([]*kgo.Record, error) {
 	pCtx, cancel := context.WithTimeout(ctx, time.Millisecond*100*time.Duration(int64(rand.Intn(3)+2)))
 	defer cancel()
 	logger.Debug().Msg("polling for records")
@@ -174,6 +177,7 @@ func formatPartitionTopic(namespace string) string {
 
 func (lc *LogConsumer) Shutdown() error {
 	logger.Info().Msg("shutting down log consumer")
+	lc.shuttingDown = true
 	lc.AdminTicker.Stop()
 	lc.AdminClient.Close()
 	lc.Client.CloseAllowingRebalance() // TODO: Maybe we want to manually mark something as going away if we are killing like this?
@@ -290,4 +294,50 @@ func (consumer *LogConsumer) pollTopicInfo() {
 			}
 		}
 	}
+}
+
+// launchPollRecordLoop is launched in a goroutine
+func (lc *LogConsumer) launchPollRecordLoop() {
+	for !lc.shuttingDown {
+		err := lc.pollRecords(context.Background())
+		if err != nil {
+			logger.Error().Err(err).Msg("error polling for records")
+		}
+	}
+}
+
+var ErrPollFetches = errors.New("error polling fetches")
+
+func (lc *LogConsumer) pollRecords(c context.Context) error {
+	// maybe use PollRecords?
+	ctx, cancel := context.WithTimeout(c, time.Second*5)
+	defer cancel()
+	fetches := lc.Client.PollFetches(ctx)
+	if errs := fetches.Errors(); len(errs) > 0 {
+		if len(errs) == 1 {
+			if errors.Is(errs[0].Err, context.DeadlineExceeded) {
+				logger.Debug().Msg("got no records")
+				return nil
+			}
+			if errors.Is(errs[0].Err, kgo.ErrClientClosed) {
+				return nil
+			}
+		}
+		return fmt.Errorf("got errors when fetching: %+v :: %w", errs, ErrPollFetches)
+	}
+
+	g := errgroup.Group{}
+	fetches.EachPartition(func(part kgo.FetchTopicPartition) {
+		g.Go(func() error {
+			for _, record := range part.Records {
+				err := lc.PartitionManager.HandleMutation(part.Partition, record.Value)
+				if err != nil {
+					return fmt.Errorf("error in HandleMutation: %w", err)
+				}
+			}
+			return nil
+		})
+	})
+	err := g.Wait()
+	return err
 }

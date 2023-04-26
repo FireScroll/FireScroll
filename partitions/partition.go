@@ -92,6 +92,7 @@ func createLocalDB(id int32) (*sql.DB, bool, error) {
 }
 
 func (p *Partition) Shutdown() error {
+	// TODO: remove log line?
 	logger.Debug().Msgf("shutting down partition %d", p.ID)
 	return p.DB.Close()
 }

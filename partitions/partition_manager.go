@@ -109,3 +109,9 @@ func (pm *PartitionManager) Shutdown() error {
 	}
 	return nil
 }
+
+func (pm *PartitionManager) HandleMutation(partitionID int32, mutationBytes []byte) error {
+	// TODO: Remove log line
+	logger.Debug().Msg("got handle mutation")
+	return nil
+}
