@@ -20,9 +20,9 @@ var (
 
 type (
 	Partition struct {
-		ID     int32
-		DB     *sql.DB
-		LastMS int64
+		ID         int32
+		DB         *sql.DB
+		LastOffset int64
 	}
 )
 
@@ -48,7 +48,7 @@ func newPartition(id int32) (*Partition, error) {
 		}
 		defer rows.Close()
 		for rows.Next() {
-			err = rows.Scan(&part.LastMS)
+			err = rows.Scan(&part.LastOffset)
 			if err != nil {
 				return nil, fmt.Errorf("error scanning offset_keeper row: %w", err)
 			}

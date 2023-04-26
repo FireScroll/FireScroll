@@ -11,6 +11,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"golang.org/x/sync/errgroup"
 	"math/rand"
 	"time"
 )
@@ -229,45 +230,58 @@ func (consumer *LogConsumer) pollTopicInfo() {
 		logger.Debug().Msgf("total partitions (%d),  my partitions (%d)", partitionCount, len(myPartitions))
 		if len(news) > 0 {
 			logger.Info().Msgf("got new partitions: %+v", news)
+			resetPartitions := make([]struct {
+				ID     int32
+				Offset int64
+			}, len(news))
+			logger.Debug().Msgf("pausing partitions %+v", news)
+			mutationTopic := formatMutationTopic(consumer.Namespace)
+			consumer.Client.PauseFetchPartitions(map[string][]int32{
+				mutationTopic: news,
+			})
+			g := errgroup.Group{}
+			for i, np := range news {
+				// variable re-use protection
+				newPart := np
+				ind := i
+				g.Go(func() error {
+					offset, err := consumer.PartitionManager.AddPartition(newPart)
+					if err != nil {
+						logger.Fatal().Err(err).Msg("error adding partition, exiting")
+					}
+					if offset == 0 {
+						logger.Info().Msgf("new partition: %d", newPart)
+					}
+					resetPartitions[ind] = struct {
+						ID     int32
+						Offset int64
+					}{ID: newPart, Offset: offset}
+					return nil
+				})
+			}
+			err := g.Wait()
+			if err != nil {
+				logger.Fatal().Err(err).Msg("error in adding a partition")
+			}
+			// Reset partition offsets
+			offsetMap := map[int32]kgo.EpochOffset{}
+			for _, resetPart := range resetPartitions {
+				offsetMap[resetPart.ID] = kgo.EpochOffset{
+					Offset: resetPart.Offset,
+				}
+			}
+			consumer.Client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+				mutationTopic: offsetMap,
+			})
+			// Resume partitions
+			consumer.Client.ResumeFetchPartitions(map[string][]int32{
+				mutationTopic: news,
+			})
+			logger.Debug().Msgf("resumed partitions %+v", news)
 		}
 		if len(gones) > 0 {
 			logger.Info().Msgf("dropped partitions: %+v", gones)
 		}
-
-		var resetPartitions []struct {
-			ID int32
-			MS int64
-		}
-		logger.Debug().Msgf("pausing partitions %+v", news)
-		mutationTopic := formatMutationTopic(consumer.Namespace)
-		consumer.Client.PauseFetchPartitions(map[string][]int32{
-			mutationTopic: news,
-		})
-		for _, newPart := range news {
-			consumeTime, err := consumer.PartitionManager.AddPartition(newPart)
-			if err != nil {
-				logger.Fatal().Err(err).Msg("error adding partition, exiting")
-			}
-			if consumeTime == 0 {
-				logger.Info().Msgf("partition %d is new, we need to reset the consumer", newPart)
-			}
-			resetPartitions = append(resetPartitions, struct {
-				ID int32
-				MS int64
-			}{ID: newPart, MS: consumeTime})
-		}
-		// Reset partition offsets
-		offsetMap := map[int32]kgo.EpochOffset{}
-		for _, resetPart := range resetPartitions {
-			offsetMap[resetPart.ID] = kgo.EpochOffset{
-				Epoch: int32(resetPart.MS / 1000),
-			}
-		}
-		consumer.Client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
-			mutationTopic: offsetMap,
-		})
-		// Resume partitions
-		logger.Debug().Msgf("resuming partitions %+v", news)
 
 		for _, gonePart := range gones {
 			err := consumer.PartitionManager.RemovePartition(gonePart)

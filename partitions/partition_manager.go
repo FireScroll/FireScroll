@@ -7,7 +7,6 @@ import (
 	"github.com/danthegoodman1/FanoutDB/syncx"
 	"github.com/danthegoodman1/FanoutDB/utils"
 	"os"
-	"time"
 )
 
 var (
@@ -57,18 +56,18 @@ func (pm *PartitionManager) AddPartition(id int32) (int64, error) {
 		return 0, fmt.Errorf("error in newPartition: %w", err)
 	}
 
-	if part.LastMS > 0 {
-		// If too old, then throw it away
-		diff := time.Now().Sub(time.UnixMilli(part.LastMS))
-		logger.Debug().Msgf("got diff of %s for partition %d", diff, id)
-		if diff.Milliseconds() > utils.Env_TopicRetentionMS {
-			return 0, fmt.Errorf("the restored partition %d was too old, including the remote backup it may have tried to restore, do you need to use a remote backup?: %w", id, ErrRestoredDBTooOld)
-		}
-	}
+	//if part.LastOffset > 0 {
+	//	// If too old, then throw it away
+	//	diff := time.Now().Sub(time.Unix(int64(part.LastEpoch), 0))
+	//	logger.Debug().Msgf("got diff of %s for partition %d", diff, id)
+	//	if diff.Milliseconds() > utils.Env_TopicRetentionMS {
+	//		return 0, fmt.Errorf("the restored partition %d was too old, including the remote backup it may have tried to restore, do you need to use a remote backup?: %w", id, ErrRestoredDBTooOld)
+	//	}
+	//}
 
 	pm.Partitions.Store(id, part)
 	logger.Debug().Msgf("added partition %d", id)
-	return part.LastMS, nil
+	return part.LastOffset, nil
 }
 
 func (pm *PartitionManager) RemovePartition(id int32) error {
