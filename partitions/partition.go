@@ -42,7 +42,7 @@ func newPartition(id int32) (*Partition, error) {
 		logger.Debug().Msgf("checking last seen time for partition %d", id)
 		// Get time if we have it
 		// TODO: for backups, if restored, compare the time of the remote snapshot
-		rows, err := db.Query(`select t from offset_keeper where id = 1`)
+		rows, err := db.Query(`select t from offset_keeper where id = 1`) // not worth preparing this since it runs once
 		if err != nil {
 			return nil, fmt.Errorf("error querying for offset_keeper time: %w", err)
 		}
@@ -67,7 +67,7 @@ func createLocalDB(id int32) (*sql.DB, bool, error) {
 		exists = true
 	}
 
-	db, err := sql.Open("sqlite3", partitionPath)
+	db, err := sql.Open("sqlite3", partitionPath+fmt.Sprintf("?_journal_mode=WAL&cache=shared"))
 	if err != nil {
 		return nil, false, fmt.Errorf("error in sql.Open: %w", err)
 	}
