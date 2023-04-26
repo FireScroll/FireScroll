@@ -27,12 +27,10 @@ func main() {
 		return internal.StartServer()
 	})
 
-	var partitionManager *partition_manager.PartitionManager
-	g.Go(func() error {
-		pm, err := partition_manager.NewPartitionManager()
-		partitionManager = pm
-		return err
-	})
+	partitionManager, err := partition_manager.NewPartitionManager()
+	if err != nil {
+		logger.Fatal().Err(err).Msg("error creating partition manager")
+	}
 	var logConsumer *log_consumer.LogConsumer
 	g.Go(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -42,7 +40,7 @@ func main() {
 		return err
 	})
 
-	err := g.Wait()
+	err = g.Wait()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error starting services, exiting")
 	}

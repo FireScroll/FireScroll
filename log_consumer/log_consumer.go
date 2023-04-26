@@ -127,6 +127,11 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 			//	atomic.StoreInt64(&consumer.NumPartitions, partitionCount)
 			//}
 			log.Println("number of partitions:", partitionCount, open)
+			assigned, _ := member.Assigned.AsConsumer()
+			myPartitions := assigned.Topics[0].Partitions
+			news, gones := lo.Difference(myPartitions, consumer.PartitionManager.GetPartitionIDs())
+			fmt.Println("new", news)
+			fmt.Println("gone", gones)
 		}
 	}()
 

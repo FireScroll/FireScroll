@@ -29,3 +29,11 @@ func (pm *PartitionManager) Shutdown(ctx context.Context) error {
 	logger.Info().Msg("shutting down partition manager")
 	return nil
 }
+
+func (pm *PartitionManager) GetPartitionIDs() (ids []int32) {
+	pm.Partitions.Range(func(id int32, _ string) bool {
+		ids = append(ids, id)
+		return true
+	})
+	return
+}
