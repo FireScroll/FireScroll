@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FanoutDB/gologger"
-	"github.com/danthegoodman1/FanoutDB/syncx"
+	"github.com/danthegoodman1/FanoutDB/partition_manager"
 	"github.com/danthegoodman1/FanoutDB/utils"
+	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"log"
 	"math/rand"
 	"time"
 )
@@ -29,9 +31,11 @@ type (
 		ConsumerGroup, Namespace string
 
 		// ManagedPartitions are the partitions that are managed on this node
-		ManagedPartitions syncx.Map[int32, *Partition]
-		Client            *kgo.Client
-		AdminClient       *kadm.Client
+		PartitionManager *partition_manager.PartitionManager
+		Client           *kgo.Client
+		AdminClient      *kadm.Client
+		AdminTicker      *time.Ticker
+		NumPartitions    int64
 	}
 
 	PartitionMessage struct {
@@ -45,18 +49,20 @@ type (
 	}
 )
 
-func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds []string, sessionMS int64) (*LogConsumer, error) {
+func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds []string, sessionMS int64, partMan *partition_manager.PartitionManager) (*LogConsumer, error) {
 	consumer := &LogConsumer{
-		ConsumerGroup:     consumerGroup,
-		Namespace:         namespace,
-		ManagedPartitions: syncx.Map[int32, *Partition]{},
-		Client:            nil,
+		ConsumerGroup:    consumerGroup,
+		Namespace:        namespace,
+		NumPartitions:    utils.Env_NumPartitions,
+		PartitionManager: partMan,
 	}
 	mutationTopic := formatMutationLog(namespace)
 	partitionTopic := formatPartitionTopic(namespace)
 	logger.Debug().Msgf("using mutation log %s and partition log %s", mutationTopic, partitionTopic)
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(seeds...),
+		kgo.ClientID("a"),
+		kgo.InstanceID(utils.Env_InstanceID),
 		kgo.ConsumerGroup(consumerGroup),
 		kgo.ConsumeTopics(mutationTopic),
 		kgo.SessionTimeout(time.Millisecond*time.Duration(sessionMS)),
@@ -67,6 +73,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	}
 	consumer.Client = cl
 	consumer.AdminClient = kadm.NewClient(cl)
+	consumer.AdminTicker = time.NewTicker(time.Second * 2)
 
 	// Verify the partitions
 	// First we should try to read from it
@@ -82,12 +89,46 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	logger.Debug().Msg("sleeping to let consumer group to register")
 	time.Sleep(time.Second)
 
-	// Get the actual partitions
-	resp, err := consumer.AdminClient.DescribeGroups(ctx, consumerGroup)
-	if err != nil {
-		return nil, fmt.Errorf("error in AdminClient.DescribeGroups: %w", err)
-	}
-	fmt.Println(resp.AssignedPartitions(), resp.Names(), resp.Sorted())
+	go func() {
+		// Get the actual partitions
+		for {
+			_, open := <-consumer.AdminTicker.C
+			if !open {
+				logger.Debug().Msg("ticker channel closed, stopping")
+				break
+			}
+			resp, err := consumer.AdminClient.DescribeGroups(context.Background(), consumerGroup)
+			if err != nil {
+				logger.Error().Err(err).Msg("error describing groups")
+				continue
+			}
+			memberID, _ := consumer.Client.GroupMetadata()
+			if len(resp.Sorted()) == 0 {
+				logger.Warn().Msg("did not get any groups yet for group metadata")
+				continue
+			}
+			member, ok := lo.Find(resp.Sorted()[0].Members, func(item kadm.DescribedGroupMember) bool {
+				return item.MemberID == memberID
+			})
+			if !ok {
+				logger.Warn().Msg("did not find myself in group metadata, cannot continue with partition mappings until I know what partitions I have")
+				continue
+			}
+			//spew.Dump(resp.Sorted())
+			log.Println("I am", member.MemberID)
+			var partitionCount int64 = 0
+			resp.AssignedPartitions().Each(func(t string, p int32) {
+				partitionCount++
+			})
+			//currentVal := atomic.LoadInt64(&consumer.NumPartitions)
+			//if currentVal != partitionCount {
+			//	// We can't continue now
+			//	logger.Fatal().Msgf("number of partitions changed in Kafka topic! I have %d, but topic has %d aborting so it's not longer safe!!!!!", consumer.NumPartitions, partitionCount)
+			//	atomic.StoreInt64(&consumer.NumPartitions, partitionCount)
+			//}
+			log.Println("number of partitions:", partitionCount, open)
+		}
+	}()
 
 	records, err := pollRecords(ctx, partitionsClient)
 
@@ -168,4 +209,12 @@ func formatMutationLog(namespace string) string {
 func formatPartitionTopic(namespace string) string {
 	// TODO: check for underscores and panic
 	return fmt.Sprintf("fanoutdb_%s_partitions", namespace)
+}
+
+func (lc *LogConsumer) Shutdown() error {
+	logger.Info().Msg("shutting down log consumer")
+	lc.AdminTicker.Stop()
+	lc.AdminClient.Close()
+	lc.Client.CloseAllowingRebalance() // TODO: Maybe we want to manually mark something as going away if we are killing like this?
+	return nil
 }

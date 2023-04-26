@@ -5,6 +5,7 @@ import (
 	"github.com/danthegoodman1/FanoutDB/gologger"
 	"github.com/danthegoodman1/FanoutDB/internal"
 	"github.com/danthegoodman1/FanoutDB/log_consumer"
+	"github.com/danthegoodman1/FanoutDB/partition_manager"
 	"github.com/danthegoodman1/FanoutDB/utils"
 	"golang.org/x/sync/errgroup"
 	"os"
@@ -26,11 +27,17 @@ func main() {
 		return internal.StartServer()
 	})
 
+	var partitionManager *partition_manager.PartitionManager
+	g.Go(func() error {
+		pm, err := partition_manager.NewPartitionManager()
+		partitionManager = pm
+		return err
+	})
 	var logConsumer *log_consumer.LogConsumer
 	g.Go(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
-		lc, err := log_consumer.NewLogConsumer(ctx, utils.Env_Namespace, utils.Env_ReplicaGroupName, strings.Split("localhost:19092,localhost:29092,localhost:39092", ","), utils.Env_KafkaSessionMs)
+		lc, err := log_consumer.NewLogConsumer(ctx, utils.Env_Namespace, utils.Env_ReplicaGroupName, strings.Split("localhost:19092,localhost:29092,localhost:39092", ","), utils.Env_KafkaSessionMs, partitionManager)
 		logConsumer = lc
 		return err
 	})
@@ -62,6 +69,12 @@ func main() {
 	g = errgroup.Group{}
 	g.Go(func() error {
 		return internal.Shutdown(ctx)
+	})
+	g.Go(func() error {
+		return partitionManager.Shutdown(ctx)
+	})
+	g.Go(func() error {
+		return logConsumer.Shutdown()
 	})
 
 	if err := g.Wait(); err != nil {

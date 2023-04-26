@@ -7,6 +7,7 @@ var (
 
 	Env_Namespace        = MustEnv("NAMESPACE")
 	Env_ReplicaGroupName = MustEnv("REPLICA_GROUP")
+	Env_InstanceID       = MustEnv("INSTANCE_ID")
 	Env_KafkaSessionMs   = MustEnvOrDefaultInt64("KAFKA_SESSION_MS", 60_000)
 	Env_NumPartitions    = MustEnvOrDefaultInt64("PARTITIONS", 256)
 )
