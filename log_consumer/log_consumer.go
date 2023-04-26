@@ -6,12 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FanoutDB/gologger"
-	"github.com/danthegoodman1/FanoutDB/partition_manager"
+	"github.com/danthegoodman1/FanoutDB/partitions"
 	"github.com/danthegoodman1/FanoutDB/utils"
 	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"log"
 	"math/rand"
 	"time"
 )
@@ -31,7 +30,7 @@ type (
 		ConsumerGroup, Namespace string
 
 		// ManagedPartitions are the partitions that are managed on this node
-		PartitionManager *partition_manager.PartitionManager
+		PartitionManager *partitions.PartitionManager
 		Client           *kgo.Client
 		AdminClient      *kadm.Client
 		AdminTicker      *time.Ticker
@@ -49,19 +48,19 @@ type (
 	}
 )
 
-func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds []string, sessionMS int64, partMan *partition_manager.PartitionManager) (*LogConsumer, error) {
+func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds []string, sessionMS int64, partMan *partitions.PartitionManager) (*LogConsumer, error) {
 	consumer := &LogConsumer{
 		ConsumerGroup:    consumerGroup,
 		Namespace:        namespace,
 		NumPartitions:    utils.Env_NumPartitions,
 		PartitionManager: partMan,
 	}
-	mutationTopic := formatMutationLog(namespace)
+	mutationTopic := formatMutationTopic(namespace)
 	partitionTopic := formatPartitionTopic(namespace)
 	logger.Debug().Msgf("using mutation log %s and partition log %s", mutationTopic, partitionTopic)
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(seeds...),
-		kgo.ClientID("a"),
+		kgo.ClientID("fanoutdb"),
 		kgo.InstanceID(utils.Env_InstanceID),
 		kgo.ConsumerGroup(consumerGroup),
 		kgo.ConsumeTopics(mutationTopic),
@@ -89,51 +88,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	logger.Debug().Msg("sleeping to let consumer group to register")
 	time.Sleep(time.Second)
 
-	go func() {
-		// Get the actual partitions
-		for {
-			_, open := <-consumer.AdminTicker.C
-			if !open {
-				logger.Debug().Msg("ticker channel closed, stopping")
-				break
-			}
-			resp, err := consumer.AdminClient.DescribeGroups(context.Background(), consumerGroup)
-			if err != nil {
-				logger.Error().Err(err).Msg("error describing groups")
-				continue
-			}
-			memberID, _ := consumer.Client.GroupMetadata()
-			if len(resp.Sorted()) == 0 {
-				logger.Warn().Msg("did not get any groups yet for group metadata")
-				continue
-			}
-			member, ok := lo.Find(resp.Sorted()[0].Members, func(item kadm.DescribedGroupMember) bool {
-				return item.MemberID == memberID
-			})
-			if !ok {
-				logger.Warn().Msg("did not find myself in group metadata, cannot continue with partition mappings until I know what partitions I have")
-				continue
-			}
-			//spew.Dump(resp.Sorted())
-			log.Println("I am", member.MemberID)
-			var partitionCount int64 = 0
-			resp.AssignedPartitions().Each(func(t string, p int32) {
-				partitionCount++
-			})
-			//currentVal := atomic.LoadInt64(&consumer.NumPartitions)
-			//if currentVal != partitionCount {
-			//	// We can't continue now
-			//	logger.Fatal().Msgf("number of partitions changed in Kafka topic! I have %d, but topic has %d aborting so it's not longer safe!!!!!", consumer.NumPartitions, partitionCount)
-			//	atomic.StoreInt64(&consumer.NumPartitions, partitionCount)
-			//}
-			log.Println("number of partitions:", partitionCount, open)
-			assigned, _ := member.Assigned.AsConsumer()
-			myPartitions := assigned.Topics[0].Partitions
-			news, gones := lo.Difference(myPartitions, consumer.PartitionManager.GetPartitionIDs())
-			fmt.Println("new", news)
-			fmt.Println("gone", gones)
-		}
-	}()
+	go consumer.pollTopicInfo()
 
 	records, err := pollRecords(ctx, partitionsClient)
 
@@ -206,7 +161,7 @@ func pollRecords(ctx context.Context, client *kgo.Client) ([]*kgo.Record, error)
 	return records, nil
 }
 
-func formatMutationLog(namespace string) string {
+func formatMutationTopic(namespace string) string {
 	// TODO: check for underscores and panic
 	return fmt.Sprintf("fanoutdb_%s_mutations", namespace)
 }
@@ -222,4 +177,103 @@ func (lc *LogConsumer) Shutdown() error {
 	lc.AdminClient.Close()
 	lc.Client.CloseAllowingRebalance() // TODO: Maybe we want to manually mark something as going away if we are killing like this?
 	return nil
+}
+
+func (consumer *LogConsumer) pollTopicInfo() {
+	// Get the actual partitions
+	for {
+		_, open := <-consumer.AdminTicker.C
+		if !open {
+			logger.Debug().Msg("ticker channel closed, stopping")
+			break
+		}
+		resp, err := consumer.AdminClient.DescribeGroups(context.Background(), consumer.ConsumerGroup)
+		if err != nil {
+			logger.Error().Err(err).Msg("error describing groups")
+			continue
+		}
+		memberID, _ := consumer.Client.GroupMetadata()
+		if len(resp.Sorted()) == 0 {
+			logger.Warn().Msg("did not get any groups yet for group metadata")
+			continue
+		}
+		member, ok := lo.Find(resp.Sorted()[0].Members, func(item kadm.DescribedGroupMember) bool {
+			return item.MemberID == memberID
+		})
+		if !ok {
+			logger.Warn().Msg("did not find myself in group metadata, cannot continue with partition mappings until I know what partitions I have")
+			continue
+		}
+
+		logger.Debug().Msgf("member ID %s", member.MemberID)
+		var partitionCount int64 = 0
+		resp.AssignedPartitions().Each(func(t string, p int32) {
+			partitionCount++
+		})
+
+		// TODO: Add topic change abort back in
+		//currentVal := atomic.LoadInt64(&consumer.NumPartitions)
+		//if currentVal != partitionCount {
+		//	// We can't continue now
+		//	logger.Fatal().Msgf("number of partitions changed in Kafka topic! I have %d, but topic has %d aborting so it's not longer safe!!!!!", consumer.NumPartitions, partitionCount)
+		//	atomic.StoreInt64(&consumer.NumPartitions, partitionCount)
+		//}
+
+		assigned, _ := member.Assigned.AsConsumer()
+		if len(assigned.Topics) == 0 {
+			logger.Warn().Interface("assigned", assigned).Msg("did not find any assigned topics, can't make changes")
+			continue
+		}
+		myPartitions := assigned.Topics[0].Partitions
+		news, gones := lo.Difference(myPartitions, consumer.PartitionManager.GetPartitionIDs())
+		logger.Debug().Msgf("total partitions (%d),  my partitions (%d)", partitionCount, len(myPartitions))
+		if len(news) > 0 {
+			logger.Info().Msgf("got new partitions: %+v", news)
+		}
+		if len(gones) > 0 {
+			logger.Info().Msgf("dropped partitions: %+v", gones)
+		}
+
+		var resetPartitions []struct {
+			ID int32
+			MS int64
+		}
+		logger.Debug().Msgf("pausing partitions %+v", news)
+		mutationTopic := formatMutationTopic(consumer.Namespace)
+		consumer.Client.PauseFetchPartitions(map[string][]int32{
+			mutationTopic: news,
+		})
+		for _, newPart := range news {
+			consumeTime, err := consumer.PartitionManager.AddPartition(newPart)
+			if err != nil {
+				logger.Fatal().Err(err).Msg("error adding partition, exiting")
+			}
+			if consumeTime == 0 {
+				logger.Info().Msgf("partition %d is new, we need to reset the consumer", newPart)
+			}
+			resetPartitions = append(resetPartitions, struct {
+				ID int32
+				MS int64
+			}{ID: newPart, MS: consumeTime})
+		}
+		// Reset partition offsets
+		offsetMap := map[int32]kgo.EpochOffset{}
+		for _, resetPart := range resetPartitions {
+			offsetMap[resetPart.ID] = kgo.EpochOffset{
+				Epoch:  int32(resetPart.MS/1000),
+			}
+		}
+		consumer.Client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
+			mutationTopic: lo.
+		})
+		// Resume partitions
+		logger.Debug().Msgf("resuming partitions %+v", news)
+
+		for _, gonePart := range gones {
+			err := consumer.PartitionManager.RemovePartition(gonePart)
+			if err != nil {
+				logger.Fatal().Err(err).Msg("error removing partition, exiting")
+			}
+		}
+	}
 }
