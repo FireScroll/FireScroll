@@ -49,7 +49,7 @@ func (pm *PartitionManager) AddPartition(id int32) (int64, error) {
 	}
 
 	// Create the dir if we need
-	os.MkdirAll(utils.Env_DBPath, 0777)
+	_ = os.MkdirAll(utils.Env_DBPath, 0777)
 
 	part, err := newPartition(id)
 	if err != nil {
