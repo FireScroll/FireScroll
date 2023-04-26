@@ -260,11 +260,11 @@ func (consumer *LogConsumer) pollTopicInfo() {
 		offsetMap := map[int32]kgo.EpochOffset{}
 		for _, resetPart := range resetPartitions {
 			offsetMap[resetPart.ID] = kgo.EpochOffset{
-				Epoch:  int32(resetPart.MS/1000),
+				Epoch: int32(resetPart.MS / 1000),
 			}
 		}
 		consumer.Client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
-			mutationTopic: lo.
+			mutationTopic: offsetMap,
 		})
 		// Resume partitions
 		logger.Debug().Msgf("resuming partitions %+v", news)
