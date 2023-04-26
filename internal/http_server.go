@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"net/http"
+	"strings"
 )
 
 var (
@@ -23,7 +24,12 @@ func StartServer() error {
 		Addr:    fmt.Sprintf(":%s", Env_InternalPort),
 		Handler: mux,
 	}
-	go httpServer.ListenAndServe()
+	go func() {
+		err := httpServer.ListenAndServe()
+		if strings.Contains(err.Error(), "address already in use") {
+			logger.Fatal().Err(err).Msg("error starting server")
+		}
+	}()
 	return nil
 }
 

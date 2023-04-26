@@ -10,6 +10,9 @@ tasks:
   default:
     cmds:
       - go run .
+  2:
+    cmds:
+      - DB_PATH="./dbs2" INSTANCE_ID=testinstance2 INTERNAL_PORT=8092 go run .
   docker:
     cmds:
       - docker build . -t fanoutdb:latest --ssh default

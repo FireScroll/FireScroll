@@ -5,7 +5,7 @@ import (
 	"github.com/danthegoodman1/FanoutDB/gologger"
 	"github.com/danthegoodman1/FanoutDB/internal"
 	"github.com/danthegoodman1/FanoutDB/log_consumer"
-	"github.com/danthegoodman1/FanoutDB/partition_manager"
+	"github.com/danthegoodman1/FanoutDB/partitions"
 	"github.com/danthegoodman1/FanoutDB/utils"
 	"golang.org/x/sync/errgroup"
 	"os"
@@ -27,7 +27,7 @@ func main() {
 		return internal.StartServer()
 	})
 
-	partitionManager, err := partition_manager.NewPartitionManager()
+	partitionManager, err := partitions.NewPartitionManager()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("error creating partition manager")
 	}
@@ -69,7 +69,7 @@ func main() {
 		return internal.Shutdown(ctx)
 	})
 	g.Go(func() error {
-		return partitionManager.Shutdown(ctx)
+		return partitionManager.Shutdown()
 	})
 	g.Go(func() error {
 		return logConsumer.Shutdown()
