@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FanoutDB/gologger"
+	"github.com/danthegoodman1/FanoutDB/partitions"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -16,9 +17,7 @@ import (
 )
 
 var (
-	httpServer *http.Server
-	logger     = gologger.NewLogger()
-	e          *echo.Echo
+	logger = gologger.NewLogger()
 )
 
 type CustomValidator struct {
@@ -42,12 +41,17 @@ func ValidateRequest(c echo.Context, s interface{}) error {
 	return nil
 }
 
-func StartServer() error {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", Env_APIPort))
+type HTTPServer struct {
+	e  *echo.Echo
+	pm *partitions.PartitionManager
+}
+
+func StartServer(port string, pm *partitions.PartitionManager) (*HTTPServer, error) {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
-		return fmt.Errorf("error in net.Listen: %w", err)
+		return nil, fmt.Errorf("error in net.Listen: %w", err)
 	}
-	e = echo.New()
+	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
 	logConfig := middleware.LoggerConfig{
@@ -86,13 +90,17 @@ func StartServer() error {
 	}()
 
 	e.GET("/up", Up)
+	e.POST("/records/:op", operationHandler)
 
-	return nil
+	return &HTTPServer{
+		e:  e,
+		pm: pm,
+	}, nil
 }
 
-func Shutdown(ctx context.Context) error {
+func (s *HTTPServer) Shutdown(ctx context.Context) error {
 	logger.Info().Msg("shutting down api server")
-	return e.Shutdown(ctx)
+	return s.e.Shutdown(ctx)
 	return nil
 }
 

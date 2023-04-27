@@ -100,3 +100,5 @@ func (p *Partition) Shutdown() error {
 func getPartitionPath(id int32) string {
 	return path.Join(utils.Env_DBPath, fmt.Sprintf("%d.db", id))
 }
+
+func (p *Partition)

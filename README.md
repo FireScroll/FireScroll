@@ -41,21 +41,21 @@ Redpanda and Kafka are used pretty interchangeably here. They mean the same thin
 
 The API is HTTP/1.1 & 2 compatible, with all operations as a `POST` request and JSON bodies.
 
-### Put Record(s) `POST /put`
+### Put Record(s) `POST /records/put`
 
 Can add an `If` condition on it for conditional
 
 Can check for existence with `pk ≠ null`
 
-### Get Record(s) `POST /get`
+### Get Record(s) `POST /records/get`
 
 Get record(s) by their `pk` and `sk` pairs. Multiple records can be fetched at the same time.
 
-### Delete Record(s) `POST /delete`
+### Delete Record(s) `POST /records/delete`
 
 Delete record(s) by pk and sk, can put an IF condition on it
 
-### List Records `POST /list`
+### List Records `POST /records/list`
 
 Can have starts_after or ends_before to determine the direction, and prefix
 
@@ -63,7 +63,7 @@ Can specify a pk or a partition number. If pk then sk is the filter. If partitio
 
 Can use IF to filter rows, not on partition number
 
-### Batch Put and Delete Records `POST /batch`
+### Batch Put and Delete Records `POST /records/batch`
 
 Multiple `Put` and `Delete` operations can be sent in a single request, which will result in all operations being atomic.
 

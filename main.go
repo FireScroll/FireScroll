@@ -27,15 +27,18 @@ func main() {
 		logger.Debug().Msg("starting internal server")
 		return internal.StartServer()
 	})
-	g.Go(func() error {
-		logger.Debug().Msg("starting api server")
-		return api.StartServer()
-	})
 
 	partitionManager, err := partitions.NewPartitionManager()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("error creating partition manager")
 	}
+	var apiServer *api.HTTPServer
+	g.Go(func() error {
+		logger.Debug().Msg("starting api server")
+		s, err := api.StartServer(utils.Env_APIPort, partitionManager)
+		apiServer = s
+		return err
+	})
 	var logConsumer *log_consumer.LogConsumer
 	g.Go(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -74,7 +77,7 @@ func main() {
 		return internal.Shutdown(ctx)
 	})
 	g.Go(func() error {
-		return api.Shutdown(ctx)
+		return apiServer.Shutdown(ctx)
 	})
 	g.Go(func() error {
 		return partitionManager.Shutdown()
