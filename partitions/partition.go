@@ -42,7 +42,7 @@ func newPartition(id int32) (*Partition, error) {
 		logger.Debug().Msgf("checking last seen time for partition %d", id)
 		// Get time if we have it
 		// TODO: for backups, if restored, compare the time of the remote snapshot
-		rows, err := db.Query(`select t from offset_keeper where id = 1`) // not worth preparing this since it runs once
+		rows, err := db.Query(`select offset from offset_keeper where id = 1`) // not worth preparing this since it runs once
 		if err != nil {
 			return nil, fmt.Errorf("error querying for offset_keeper time: %w", err)
 		}
