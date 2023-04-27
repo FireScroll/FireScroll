@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/danthegoodman1/FanoutDB/api"
 	"github.com/danthegoodman1/FanoutDB/gologger"
 	"github.com/danthegoodman1/FanoutDB/internal"
 	"github.com/danthegoodman1/FanoutDB/log_consumer"
@@ -25,6 +26,10 @@ func main() {
 	g.Go(func() error {
 		logger.Debug().Msg("starting internal server")
 		return internal.StartServer()
+	})
+	g.Go(func() error {
+		logger.Debug().Msg("starting api server")
+		return api.StartServer()
 	})
 
 	partitionManager, err := partitions.NewPartitionManager()
@@ -67,6 +72,9 @@ func main() {
 	g = errgroup.Group{}
 	g.Go(func() error {
 		return internal.Shutdown(ctx)
+	})
+	g.Go(func() error {
+		return api.Shutdown(ctx)
 	})
 	g.Go(func() error {
 		return partitionManager.Shutdown()
