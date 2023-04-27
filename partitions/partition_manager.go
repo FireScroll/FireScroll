@@ -2,6 +2,7 @@ package partitions
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FanoutDB/gologger"
@@ -112,9 +113,22 @@ func (pm *PartitionManager) Shutdown() error {
 	return nil
 }
 
-func (pm *PartitionManager) HandleMutation(partitionID int32, mutationBytes []byte) error {
+func (pm *PartitionManager) HandleMutation(partitionID int32, mutationBytes []byte, offset int64) error {
+	var mutation RecordMutation
+	err := json.Unmarshal(mutationBytes, &mutation)
+	if err != nil {
+		return fmt.Errorf("error in json.Unmarshal: %w", err)
+	}
 	// TODO: Remove log line
-	logger.Debug().Msg("got handle mutation")
+	logger.Debug().Msgf("got handle mutation %d %d %d %s", partitionID, utils.GetPartition(mutation.Pk), offset, string(mutationBytes))
+	part, exists := pm.Partitions.Load(partitionID)
+	if !exists {
+		return ErrPartitionNotFound
+	}
+	err = part.HandleMutation(mutation, offset)
+	if err != nil {
+		return fmt.Errorf("error in part.HandleMutation: %w", err)
+	}
 	return nil
 }
 

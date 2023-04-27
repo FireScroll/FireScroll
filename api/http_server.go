@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FanoutDB/gologger"
+	"github.com/danthegoodman1/FanoutDB/log_consumer"
 	"github.com/danthegoodman1/FanoutDB/partitions"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -44,9 +45,10 @@ func ValidateRequest(c echo.Context, s interface{}) error {
 type HTTPServer struct {
 	e  *echo.Echo
 	pm *partitions.PartitionManager
+	lc *log_consumer.LogConsumer
 }
 
-func StartServer(port string, pm *partitions.PartitionManager) (*HTTPServer, error) {
+func StartServer(port string, pm *partitions.PartitionManager, lc *log_consumer.LogConsumer) (*HTTPServer, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		return nil, fmt.Errorf("error in net.Listen: %w", err)
@@ -55,6 +57,7 @@ func StartServer(port string, pm *partitions.PartitionManager) (*HTTPServer, err
 	s := &HTTPServer{
 		e:  e,
 		pm: pm,
+		lc: lc,
 	}
 	e.HideBanner = true
 	e.HidePort = true

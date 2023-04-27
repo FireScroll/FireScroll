@@ -56,6 +56,10 @@ func newPartition(id int32) (*Partition, error) {
 				return nil, fmt.Errorf("error scanning offset_keeper row: %w", err)
 			}
 		}
+		// TODO: remove log line
+		if part.LastOffset != 0 {
+			logger.Debug().Msgf("partition %d restoring at offset %d", id, part.LastOffset)
+		}
 	}
 
 	return part, nil
@@ -115,10 +119,14 @@ func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record
 		placeHolders = append(placeHolders, "(pk = ? AND sk = ?)")
 		flatKeys = append(flatKeys, key.Pk, key.Sk)
 	}
-
-	rows, err := p.DB.QueryContext(ctx, fmt.Sprintf(`
+	stmt := fmt.Sprintf(`
 		select pk, sk, data, _created_at, _updated_at
-		from kv where %s`, strings.Join(placeHolders, " OR ")), flatKeys...)
+		from kv where %s`, strings.Join(placeHolders, " OR "))
+
+	// TODO: remove log line
+	logger.Debug().Msgf("running read query: %s", stmt)
+
+	rows, err := p.DB.QueryContext(ctx, stmt, flatKeys...)
 	if err != nil {
 		return nil, fmt.Errorf("error in DB.Query: %w", err)
 	}
@@ -133,7 +141,60 @@ func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record
 		if err != nil {
 			return records, fmt.Errorf("error in json.Unmarshal: %w", err)
 		}
+		records = append(records, record)
 	}
 
 	return records, nil
+}
+
+func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error {
+	switch mutation.Mutation {
+	case OperationPut:
+		b, err := json.Marshal(mutation.Data)
+		if err != nil {
+			return fmt.Errorf("error in json.Marshal: %w", err)
+		}
+		return p.handlePut(mutation.Pk, mutation.Sk, b, offset)
+	case OperationDelete:
+		return p.handleDelete(mutation.Pk, mutation.Sk, offset)
+	default:
+		return ErrUnknownOperation
+	}
+}
+
+func (p *Partition) handlePut(pk, sk string, data []byte, offset int64) error {
+	// TODO: remove log line
+	logger.Debug().Msg("handling put")
+	_, err := p.DB.Exec(`insert into kv (pk, sk, data)
+		values (?, ?, ?)
+		on conflict do update
+		set data = excluded.data`, pk, sk, data)
+	if err != nil {
+		return fmt.Errorf("error in insert: %w", err)
+	}
+	_, err = p.DB.Exec(`insert into offset_keeper (id, offset)
+		values (1, ?)
+		on conflict do update
+		set offset = excluded.offset`, offset+1) // offset is inclusive
+	if err != nil {
+		return fmt.Errorf("error in offset update: %w", err)
+	}
+	return nil
+}
+
+func (p *Partition) handleDelete(pk, sk string, offset int64) error {
+	// TODO: remove log line
+	logger.Debug().Msg("handling delete")
+	_, err := p.DB.Exec(`delete from kv where pk = ? and sk = ?`, pk, sk)
+	if err != nil {
+		return fmt.Errorf("error in delete: %w", err)
+	}
+	_, err = p.DB.Exec(`insert into offset_keeper (id, offset)
+		values (1, ?)
+		on conflict do update
+		set offset = excluded.offset`, offset+1) // offset is inclusive
+	if err != nil {
+		return fmt.Errorf("error in offset update: %w", err)
+	}
+	return nil
 }

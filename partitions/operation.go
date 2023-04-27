@@ -1,5 +1,7 @@
 package partitions
 
+import "errors"
+
 type Operation string
 
 const (
@@ -7,4 +9,8 @@ const (
 	OperationGet    Operation = "get"
 	OperationDelete Operation = "delete"
 	OperationBatch  Operation = "batch"
+)
+
+var (
+	ErrUnknownOperation = errors.New("unknown operation")
 )

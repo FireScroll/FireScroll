@@ -32,13 +32,6 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("error creating partition manager")
 	}
-	var apiServer *api.HTTPServer
-	g.Go(func() error {
-		logger.Debug().Msg("starting api server")
-		s, err := api.StartServer(utils.Env_APIPort, partitionManager)
-		apiServer = s
-		return err
-	})
 	var logConsumer *log_consumer.LogConsumer
 	g.Go(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -52,6 +45,12 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error starting services, exiting")
 	}
+
+	apiServer, err := api.StartServer(utils.Env_APIPort, partitionManager, logConsumer)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("error starting api server")
+	}
+
 	logger.Info().Msg("all services started")
 
 	c := make(chan os.Signal, 1)
