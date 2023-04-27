@@ -28,7 +28,7 @@ type (
 	// LogConsumer is a single consumer of log, belonging to a single consumer group.
 	// It also manages gossip participation
 	LogConsumer struct {
-		ConsumerGroup, Namespace string
+		ConsumerGroup, Namespace, MutationTopic string
 
 		// ManagedPartitions are the partitions that are managed on this node
 		PartitionManager *partitions.PartitionManager
@@ -57,16 +57,17 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 		Namespace:        namespace,
 		NumPartitions:    utils.Env_NumPartitions,
 		PartitionManager: partMan,
+		MutationTopic:    formatMutationTopic(namespace),
 	}
-	mutationTopic := formatMutationTopic(namespace)
 	partitionTopic := formatPartitionTopic(namespace)
-	logger.Debug().Msgf("using mutation log %s and partition log %s", mutationTopic, partitionTopic)
+	logger.Debug().Msgf("using mutation log %s and partition log %s", consumer.MutationTopic, partitionTopic)
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(seeds...),
 		kgo.ClientID("fanoutdb"),
 		kgo.InstanceID(utils.Env_InstanceID),
 		kgo.ConsumerGroup(consumerGroup),
-		kgo.ConsumeTopics(mutationTopic),
+		kgo.ConsumeTopics(consumer.MutationTopic),
+		kgo.RecordPartitioner(kgo.StickyKeyPartitioner(nil)), // force murmur2, same as in utils
 		kgo.SessionTimeout(time.Millisecond*time.Duration(sessionMS)),
 		//kgo.DisableAutoCommit(), // TODO: See comment, need listeners
 	)
@@ -330,7 +331,7 @@ func (lc *LogConsumer) pollRecords(c context.Context) error {
 	fetches.EachPartition(func(part kgo.FetchTopicPartition) {
 		g.Go(func() error {
 			for _, record := range part.Records {
-				err := lc.PartitionManager.HandleMutation(part.Partition, record.Value)
+				err := lc.PartitionManager.HandleMutation(part.Partition, record.Value, record.Offset)
 				if err != nil {
 					return fmt.Errorf("error in HandleMutation: %w", err)
 				}

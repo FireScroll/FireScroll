@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/danthegoodman1/FanoutDB/api"
 	"github.com/danthegoodman1/FanoutDB/gologger"
 	"github.com/danthegoodman1/FanoutDB/internal"
 	"github.com/danthegoodman1/FanoutDB/log_consumer"
@@ -44,6 +45,12 @@ func main() {
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error starting services, exiting")
 	}
+
+	apiServer, err := api.StartServer(utils.Env_APIPort, partitionManager, logConsumer)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("error starting api server")
+	}
+
 	logger.Info().Msg("all services started")
 
 	c := make(chan os.Signal, 1)
@@ -67,6 +74,9 @@ func main() {
 	g = errgroup.Group{}
 	g.Go(func() error {
 		return internal.Shutdown(ctx)
+	})
+	g.Go(func() error {
+		return apiServer.Shutdown(ctx)
 	})
 	g.Go(func() error {
 		return partitionManager.Shutdown()

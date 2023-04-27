@@ -12,4 +12,6 @@ var (
 	Env_TopicRetentionMS = MustEnvInt64("TOPIC_RETENTION_MS")
 
 	Env_DBPath = EnvOrDefault("DB_PATH", "/var/fanoutdb/db")
+
+	Env_APIPort = EnvOrDefault("API_PORT", "8070")
 )

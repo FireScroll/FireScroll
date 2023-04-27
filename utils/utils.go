@@ -48,3 +48,43 @@ func MustEnv(env string) string {
 	}
 	return res
 }
+
+// extracted from franz-go
+func Murmur2(b []byte) uint32 {
+	const (
+		seed uint32 = 0x9747b28c
+		m    uint32 = 0x5bd1e995
+		r           = 24
+	)
+	h := seed ^ uint32(len(b))
+	for len(b) >= 4 {
+		k := uint32(b[3])<<24 + uint32(b[2])<<16 + uint32(b[1])<<8 + uint32(b[0])
+		b = b[4:]
+		k *= m
+		k ^= k >> r
+		k *= m
+
+		h *= m
+		h ^= k
+	}
+	switch len(b) {
+	case 3:
+		h ^= uint32(b[2]) << 16
+		fallthrough
+	case 2:
+		h ^= uint32(b[1]) << 8
+		fallthrough
+	case 1:
+		h ^= uint32(b[0])
+		h *= m
+	}
+
+	h ^= h >> 13
+	h *= m
+	h ^= h >> 15
+	return h
+}
+
+func GetPartition(k string) int32 {
+	return int32(Murmur2([]byte(k)) % uint32(Env_NumPartitions))
+}

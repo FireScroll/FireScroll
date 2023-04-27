@@ -1,0 +1,56 @@
+### Put records
+POST http://localhost:8070/records/put
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      }
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2",
+      "data": {
+        "lets": "go"
+      }
+    }
+  ]
+}
+
+### Get records
+POST http://localhost:8070/records/get
+Content-Type: application/json
+
+{
+  "Keys": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+### Delete records
+POST http://localhost:8070/records/delete
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    }
+  ]
+}
