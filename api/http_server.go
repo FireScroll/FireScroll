@@ -52,6 +52,10 @@ func StartServer(port string, pm *partitions.PartitionManager) (*HTTPServer, err
 		return nil, fmt.Errorf("error in net.Listen: %w", err)
 	}
 	e := echo.New()
+	s := &HTTPServer{
+		e:  e,
+		pm: pm,
+	}
 	e.HideBanner = true
 	e.HidePort = true
 	logConfig := middleware.LoggerConfig{
@@ -90,12 +94,9 @@ func StartServer(port string, pm *partitions.PartitionManager) (*HTTPServer, err
 	}()
 
 	e.GET("/up", Up)
-	e.POST("/records/:op", operationHandler)
+	e.POST("/records/:op", s.operationHandler)
 
-	return &HTTPServer{
-		e:  e,
-		pm: pm,
-	}, nil
+	return s, nil
 }
 
 func (s *HTTPServer) Shutdown(ctx context.Context) error {

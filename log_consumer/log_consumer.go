@@ -67,6 +67,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 		kgo.InstanceID(utils.Env_InstanceID),
 		kgo.ConsumerGroup(consumerGroup),
 		kgo.ConsumeTopics(mutationTopic),
+		kgo.RecordPartitioner(kgo.StickyKeyPartitioner(nil)), // force murmur2, same as in utils
 		kgo.SessionTimeout(time.Millisecond*time.Duration(sessionMS)),
 		//kgo.DisableAutoCommit(), // TODO: See comment, need listeners
 	)

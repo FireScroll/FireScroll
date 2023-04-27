@@ -1,13 +1,16 @@
 package partitions
 
 import (
+	"context"
 	"database/sql"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"github.com/danthegoodman1/FanoutDB/utils"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"path"
+	"strings"
 )
 
 var (
@@ -101,4 +104,36 @@ func getPartitionPath(id int32) string {
 	return path.Join(utils.Env_DBPath, fmt.Sprintf("%d.db", id))
 }
 
-func (p *Partition)
+func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record, error) {
+	// Get unique pks and sks for query
+	// TODO: VERY TEMP
+	var records []Record
+
+	var placeHolders []string
+	var flatKeys []any
+	for _, key := range keys {
+		placeHolders = append(placeHolders, "(pk = ? AND sk = ?)")
+		flatKeys = append(flatKeys, key.Pk, key.Sk)
+	}
+
+	rows, err := p.DB.QueryContext(ctx, fmt.Sprintf(`
+		select pk, sk, data, _created_at, _updated_at
+		from kv where %s`, strings.Join(placeHolders, " OR ")), flatKeys...)
+	if err != nil {
+		return nil, fmt.Errorf("error in DB.Query: %w", err)
+	}
+	for rows.Next() {
+		record := Record{}
+		var jsonString string
+		err = rows.Scan(&record.Pk, &record.Sk, &jsonString, &record.CreatedAt, &record.UpdatedAt)
+		if err != nil {
+			return records, fmt.Errorf("error in rows.Scan: %w", err)
+		}
+		err = json.Unmarshal([]byte(jsonString), &record.Data)
+		if err != nil {
+			return records, fmt.Errorf("error in json.Unmarshal: %w", err)
+		}
+	}
+
+	return records, nil
+}

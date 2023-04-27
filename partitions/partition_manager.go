@@ -1,6 +1,7 @@
 package partitions
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FanoutDB/gologger"
@@ -13,6 +14,7 @@ var (
 	logger                    = gologger.NewLogger()
 	ErrPartitionAlreadyExists = errors.New("partition already exists")
 	ErrRestoredDBTooOld       = errors.New("the restored database was too old")
+	ErrPartitionNotFound      = errors.New("partition not found")
 )
 
 type (
@@ -114,4 +116,38 @@ func (pm *PartitionManager) HandleMutation(partitionID int32, mutationBytes []by
 	// TODO: Remove log line
 	logger.Debug().Msg("got handle mutation")
 	return nil
+}
+
+func (pm *PartitionManager) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record, error) {
+	// TODO: Remove log line
+	logger.Debug().Msg("got read record")
+	// Batch them per partitions
+	partMap := map[int32][]RecordKey{}
+	for _, key := range keys {
+		part := utils.GetPartition(key.Pk)
+		logger.Debug().Msgf("using partition %d for %+v", part, key)
+		partKeys, exists := partMap[part]
+		if !exists {
+			partMap[part] = []RecordKey{key}
+			continue
+		}
+		partKeys = append(partKeys, key)
+	}
+
+	results := make([]Record, 0)
+	for partID, partKeys := range partMap {
+		// TODO: run partitions concurrently and join results
+		part, exists := pm.Partitions.Load(partID)
+		if !exists {
+			return nil, ErrPartitionNotFound
+		}
+
+		res, err := part.ReadRecords(ctx, partKeys)
+		if err != nil {
+			return nil, fmt.Errorf("error in ReadRecord for part %d: %w", partID, err)
+		}
+		results = append(results, res...)
+	}
+
+	return results, nil
 }
