@@ -153,7 +153,8 @@ func (pm *PartitionManager) ReadRecords(ctx context.Context, keys []RecordKey) (
 		// TODO: run partitions concurrently and join results
 		part, exists := pm.Partitions.Load(partID)
 		if !exists {
-			return nil, ErrPartitionNotFound
+			// TODO: Proxy request to correct partition
+			continue
 		}
 
 		res, err := part.ReadRecords(ctx, partKeys)
