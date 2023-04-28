@@ -152,11 +152,11 @@ All writes will pass through the log cluster.
 
 ## Topic Management
 
-> ⚠️ **DO NOT TOUCH ANY TOPICS WITH THE PREFIX `fanountdb_`**
+> ⚠️ **DO NOT TOUCH ANY TOPICS WITH THE PREFIX `firescroll_`**
 > 
 > This will break the namespace if you do not know **exactly** what you are doing.
 
-When a namespace is created, 2 topic within Redpanda are created: `firescroll_{namespace}_mutations` and `fanountdb_{namespace}_partitions`.
+When a namespace is created, 2 topic within Redpanda are created: `firescroll_{namespace}_mutations` and `firescroll_{namespace}_partitions`.
 
 ### Mutations
 
