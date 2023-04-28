@@ -8,7 +8,7 @@ var (
 	Env_ReplicaGroupName = MustEnv("REPLICA_GROUP")
 	Env_InstanceID       = MustEnv("INSTANCE_ID")
 	Env_KafkaSessionMs   = MustEnvOrDefaultInt64("KAFKA_SESSION_MS", 60_000)
-	Env_NumPartitions    = MustEnvOrDefaultInt64("PARTITIONS", 256)
+	Env_NumPartitions    = MustEnvInt64("PARTITIONS")
 	Env_TopicRetentionMS = MustEnvInt64("TOPIC_RETENTION_MS")
 
 	Env_DBPath = EnvOrDefault("DB_PATH", "/var/firescroll/db")

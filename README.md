@@ -5,7 +5,7 @@ The unkillable KV database with unlimited read throughput.
 Perfect for configuration management at scale where you want global low-latency reads without caching or cold first reads.
 
 <!-- TOC -->
-* [Firescroll](#firescroll)
+* [Firescroll](#firescroll-)
   * [Quick Note](#quick-note)
   * [API](#api)
     * [Put Record(s) `POST /records/put`](#put-records-post-recordsput)
@@ -13,6 +13,9 @@ Perfect for configuration management at scale where you want global low-latency 
     * [Delete Record(s) `POST /records/delete`](#delete-records-post-recordsdelete)
     * [List Records `POST /records/list`](#list-records-post-recordslist)
     * [Batch Put and Delete Records `POST /records/batch`](#batch-put-and-delete-records-post-recordsbatch)
+  * [Setup](#setup)
+    * [Mutations Topic](#mutations-topic)
+    * [Partitions Topic](#partitions-topic)
   * [Configuration](#configuration)
   * [The `If` statement](#the-if-statement)
     * [Examples:](#examples)
@@ -72,6 +75,31 @@ Can use IF to filter rows, not on partition number
 Multiple `Put` and `Delete` operations can be sent in a single request, which will result in all operations being atomic.
 
 If any condition fails, then all operations will be aborted
+
+## Setup
+
+The first step is to create the following topics in Kafka:
+
+1. `firescroll_{namespace}_mutations`
+2. `firescroll_{namespace}_partitions`
+
+### Mutations Topic
+
+The mutations topic is used to manage all mutations (Put and Delete) that are applies to the data. It is important to set this to a partition count that is sufficient for your scale, as this cannot be changed later (nodes will refuse to start as they no longer know where data exists in). With Redpanda a partition is pretty powerful, so using are relatively high number (a few partitions per core) will cover you for a long time. For production at scale put as many topics as cores you ever intend to have in the Redpanda cluster.
+
+For example, if you are using Redpanda it might look like:
+
+```
+rpk topic create firescroll_testns_mutations
+rpk topic add-partitions firescroll_testns_mutations --num 3 # using 4 total partitions
+rpk topic create firescroll_testns_partitions
+```
+
+### Partitions Topic
+
+The partitions topic is used to record the first found topic count, and allows nodes to check against this count so that they can crash if something changes (because now we don't know where data is). While the actual partitions are checked against in real time, this serves as an extra dummy check in case you change the partition count and update the env vars (since data is not currently re-partitioned). So it's just an extra redundancy check and only ever (intentionally) writes one record, and otherwise is read on node startup.
+
+
 
 ## Configuration
 

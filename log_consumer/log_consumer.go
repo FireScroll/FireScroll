@@ -167,12 +167,10 @@ func simplePollRecords(ctx context.Context, client *kgo.Client) ([]*kgo.Record, 
 }
 
 func formatMutationTopic(namespace string) string {
-	// TODO: check for underscores and panic
 	return fmt.Sprintf("firescroll_%s_mutations", namespace)
 }
 
 func formatPartitionTopic(namespace string) string {
-	// TODO: check for underscores and panic
 	return fmt.Sprintf("firescroll_%s_partitions", namespace)
 }
 
