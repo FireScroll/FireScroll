@@ -2,15 +2,18 @@ package partitions
 
 import (
 	"context"
-	"database/sql"
 	_ "embed"
+	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/danthegoodman1/Firescroll/utils"
+	"github.com/dgraph-io/badger/v4"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 var (
@@ -19,13 +22,27 @@ var (
 
 	//go:embed create_offset_keeper.sql
 	CreateOffsetKeeperTableStmt string
+
+	LastOffsetKey = []byte("last_offset")
+
+	ErrInvalidKey = errors.New("invalid key")
+)
+
+const (
+
+	// KeyPrefix is used to prefix every key in the local DB so that all internal values are protected.
+	// ~ is a high unicode character so normal ASCII values will be below, that means a prefix scan of nothing
+	// will always be in the user space.
+	KeyPrefix = "~"
 )
 
 type (
 	Partition struct {
 		ID         int32
-		DB         *sql.DB
+		DB         *badger.DB
 		LastOffset int64
+		GCTicker   *time.Ticker
+		closeChan  chan struct{}
 	}
 )
 
@@ -36,36 +53,59 @@ func newPartition(id int32) (*Partition, error) {
 	}
 
 	part := &Partition{
-		ID: id,
-		DB: db,
+		ID:        id,
+		DB:        db,
+		GCTicker:  time.NewTicker(time.Millisecond * time.Duration(utils.Env_GCIntervalMs)),
+		closeChan: make(chan struct{}, 1),
 	}
 
 	if restored {
 		logger.Info().Msgf("partition %d restored", id)
 		logger.Debug().Msgf("checking last seen time for partition %d", id)
 		// Get time if we have it
-		// TODO: for backups, if restored, compare the time of the remote snapshot
-		rows, err := db.Query(`select offset from offset_keeper where id = 1`) // not worth preparing this since it runs once
-		if err != nil {
-			return nil, fmt.Errorf("error querying for offset_keeper time: %w", err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			err = rows.Scan(&part.LastOffset)
-			if err != nil {
-				return nil, fmt.Errorf("error scanning offset_keeper row: %w", err)
+		var b []byte
+		err := db.View(func(txn *badger.Txn) error {
+			item, err := txn.Get(LastOffsetKey)
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				return nil
 			}
+			b, err = item.ValueCopy(nil)
+			if err != nil {
+				return fmt.Errorf("error in item.ValueCopy: %w", err)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error getting LastOffsetKey: %w", err)
 		}
-		// TODO: remove log line
-		if part.LastOffset != 0 {
-			logger.Debug().Msgf("partition %d restoring at offset %d", id, part.LastOffset)
+		if len(b) > 0 {
+			part.LastOffset = int64(binary.LittleEndian.Uint64(b))
+			// TODO: remove log line
+			logger.Debug().Msgf("restored value of %d to partition %d", part.LastOffset, part.ID)
 		}
 	}
+
+	go part.gcTickHandler()
 
 	return part, nil
 }
 
-func createLocalDB(id int32) (*sql.DB, bool, error) {
+func (p *Partition) gcTickHandler() {
+	for {
+		select {
+		case <-p.GCTicker.C:
+			// TODO: check for active backup and wait on channel
+			err := p.DB.RunValueLogGC(0.5)
+			logger.Error().Err(err).Int32("partition", p.ID).Msg("error running garbage collection! Non-fatal error, but the DB might get really big!")
+		case <-p.closeChan:
+			// TODO: Remove log line
+			logger.Debug().Msgf("gc ticker for partition %d received on close channel, exiting", p.ID)
+			return
+		}
+	}
+}
+
+func createLocalDB(id int32) (*badger.DB, bool, error) {
 	partitionPath := getPartitionPath(id)
 	// Check if the DB already exists on disk
 	exists := false
@@ -73,24 +113,13 @@ func createLocalDB(id int32) (*sql.DB, bool, error) {
 		logger.Debug().Msgf("found existing DB file %s", partitionPath)
 		exists = true
 	}
-
-	db, err := sql.Open("sqlite3", partitionPath+fmt.Sprintf("?_journal_mode=WAL&cache=shared"))
-	if err != nil {
-		return nil, false, fmt.Errorf("error in sql.Open: %w", err)
+	opts := badger.DefaultOptions(partitionPath)
+	if !utils.Env_BadgerDebug {
+		opts.Logger = nil
 	}
-
-	db.SetMaxOpenConns(1)
-
-	if !exists {
-		logger.Debug().Msgf("creating tables for partition %d", id)
-		_, err = db.Exec(CreateKVTableStmt)
-		if err != nil {
-			return nil, false, fmt.Errorf("error creating KV table: %w", err)
-		}
-		_, err = db.Exec(CreateOffsetKeeperTableStmt)
-		if err != nil {
-			return nil, false, fmt.Errorf("error creating offset keeper table: %w", err)
-		}
+	db, err := badger.Open(opts)
+	if err != nil {
+		return nil, false, fmt.Errorf("error in badger.Open: %w", err)
 	}
 
 	logger.Debug().Msgf("created db for partition %s", partitionPath)
@@ -98,9 +127,19 @@ func createLocalDB(id int32) (*sql.DB, bool, error) {
 	return db, exists, nil
 }
 
+func (p *Partition) delete() error {
+	err := p.Shutdown()
+	if err != nil {
+		return fmt.Errorf("error shutting down partition: %w", err)
+	}
+	logger.Info().Msgf("deleting local partition %d", p.ID)
+	return os.RemoveAll(getPartitionPath(p.ID))
+}
+
 func (p *Partition) Shutdown() error {
-	// TODO: remove log line?
 	logger.Debug().Msgf("shutting down partition %d", p.ID)
+	p.GCTicker.Stop()
+	p.closeChan <- struct{}{}
 	return p.DB.Close()
 }
 
@@ -109,39 +148,33 @@ func getPartitionPath(id int32) string {
 }
 
 func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record, error) {
-	// Get unique pks and sks for query
-	// TODO: VERY TEMP
 	var records []Record
 
-	var placeHolders []string
-	var flatKeys []any
-	for _, key := range keys {
-		placeHolders = append(placeHolders, "(pk = ? AND sk = ?)")
-		flatKeys = append(flatKeys, key.Pk, key.Sk)
-	}
-	stmt := fmt.Sprintf(`
-		select pk, sk, data, _created_at, _updated_at
-		from kv where %s`, strings.Join(placeHolders, " OR "))
+	err := p.DB.View(func(txn *badger.Txn) error {
+		for _, key := range keys {
+			item, err := txn.Get(formatRecordKey(key.Pk, key.Sk))
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				continue
+			}
+			if err != nil {
+				return fmt.Errorf("error in txn.Get: %w", err)
+			}
+			b, err := item.ValueCopy(nil)
+			if err != nil {
+				return fmt.Errorf("error in item.ValueCopy: %w", err)
+			}
 
-	// TODO: remove log line
-	logger.Debug().Msgf("running read query: %s", stmt)
-
-	rows, err := p.DB.QueryContext(ctx, stmt, flatKeys...)
+			var storedRecord StoredRecord
+			err = json.Unmarshal(b, &storedRecord)
+			if err != nil {
+				return fmt.Errorf("error in json.Unmarshal: %w", err)
+			}
+			records = append(records, storedRecord.Record(key.Pk, key.Sk))
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error in DB.Query: %w", err)
-	}
-	for rows.Next() {
-		record := Record{}
-		var jsonString string
-		err = rows.Scan(&record.Pk, &record.Sk, &jsonString, &record.CreatedAt, &record.UpdatedAt)
-		if err != nil {
-			return records, fmt.Errorf("error in rows.Scan: %w", err)
-		}
-		err = json.Unmarshal([]byte(jsonString), &record.Data)
-		if err != nil {
-			return records, fmt.Errorf("error in json.Unmarshal: %w", err)
-		}
-		records = append(records, record)
+		return nil, fmt.Errorf("error reading record from DB: %w", err)
 	}
 
 	return records, nil
@@ -150,11 +183,7 @@ func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record
 func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error {
 	switch mutation.Mutation {
 	case OperationPut:
-		b, err := json.Marshal(mutation.Data)
-		if err != nil {
-			return fmt.Errorf("error in json.Marshal: %w", err)
-		}
-		return p.handlePut(mutation.Pk, mutation.Sk, b, offset)
+		return p.handlePut(mutation.Pk, mutation.Sk, *mutation.Data, offset)
 	case OperationDelete:
 		return p.handleDelete(mutation.Pk, mutation.Sk, offset)
 	default:
@@ -162,22 +191,50 @@ func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error 
 	}
 }
 
-func (p *Partition) handlePut(pk, sk string, data []byte, offset int64) error {
+func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) error {
 	// TODO: remove log line
 	logger.Debug().Msg("handling put")
-	_, err := p.DB.Exec(`insert into kv (pk, sk, data)
-		values (?, ?, ?)
-		on conflict do update
-		set data = excluded.data`, pk, sk, data)
+	key := formatRecordKey(pk, sk)
+	return p.DB.Update(func(txn *badger.Txn) error {
+		var stored StoredRecord
+		item, err := txn.Get(key)
+		if errors.Is(err, badger.ErrKeyNotFound) {
+			n := time.Now()
+			stored.UpdatedAt = n
+			stored.CreatedAt = n
+		} else if err != nil {
+			return fmt.Errorf("error in txn.Get: %w", err)
+		} else {
+			b, err := item.ValueCopy(nil)
+			if err != nil {
+				return fmt.Errorf("error in item.ValueCopy: %w", err)
+			}
+
+			err = json.Unmarshal(b, &stored)
+			if err != nil {
+				return fmt.Errorf("error in json.Unmarshal: %w", err)
+			}
+			n := time.Now()
+			stored.UpdatedAt = n
+		}
+		stored.Data = data
+
+		err = txn.Set(key, stored.Serialize())
+		if err != nil {
+			return fmt.Errorf("error setting record: %w", err)
+		}
+
+		return p.updateOffsetInTx(txn, offset)
+	})
+}
+
+// updateOffsetInTx handles the error message for you so you can just return it
+func (p *Partition) updateOffsetInTx(txn *badger.Txn, offset int64) error {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(offset+1))
+	err := txn.Set(LastOffsetKey, b)
 	if err != nil {
-		return fmt.Errorf("error in insert: %w", err)
-	}
-	_, err = p.DB.Exec(`insert into offset_keeper (id, offset)
-		values (1, ?)
-		on conflict do update
-		set offset = excluded.offset`, offset+1) // offset is inclusive
-	if err != nil {
-		return fmt.Errorf("error in offset update: %w", err)
+		return fmt.Errorf("error in setting offset: %w", err)
 	}
 	return nil
 }
@@ -185,16 +242,36 @@ func (p *Partition) handlePut(pk, sk string, data []byte, offset int64) error {
 func (p *Partition) handleDelete(pk, sk string, offset int64) error {
 	// TODO: remove log line
 	logger.Debug().Msg("handling delete")
-	_, err := p.DB.Exec(`delete from kv where pk = ? and sk = ?`, pk, sk)
-	if err != nil {
-		return fmt.Errorf("error in delete: %w", err)
+	return p.DB.Update(func(txn *badger.Txn) error {
+		err := txn.Delete(formatRecordKey(pk, sk))
+		if err != nil {
+			return fmt.Errorf("error deleting record: %w", err)
+		}
+
+		return p.updateOffsetInTx(txn, offset)
+	})
+}
+
+// pkToStorageKey formats the key for storage
+func pkToStorageKey(pk string) string {
+	return KeyPrefix + pk
+}
+
+// pkFromStorageKey removes the storage key prefix
+func pkFromStorageKey(storagePK string) string {
+	return storagePK[len(KeyPrefix):]
+}
+
+// formatRecordKey takes in a pk and sk and returns the key that is used in the db
+func formatRecordKey(pk, sk string) []byte {
+	return []byte(pkToStorageKey(pk) + "\x00" + sk)
+}
+
+// splitRecordKey will split a record key into it's pk and sk parts
+func splitRecordKey(recordKey []byte) (pk string, sk string, err error) {
+	parts := strings.Split(string(recordKey), "\x00")
+	if len(parts) != 2 {
+		return "", "", ErrInvalidKey
 	}
-	_, err = p.DB.Exec(`insert into offset_keeper (id, offset)
-		values (1, ?)
-		on conflict do update
-		set offset = excluded.offset`, offset+1) // offset is inclusive
-	if err != nil {
-		return fmt.Errorf("error in offset update: %w", err)
-	}
-	return nil
+	return pkFromStorageKey(parts[0]), parts[1], nil
 }

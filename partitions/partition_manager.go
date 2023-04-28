@@ -87,7 +87,7 @@ func (pm *PartitionManager) RemovePartition(id int32) error {
 		}
 	}
 
-	err := os.Remove(getPartitionPath(id))
+	err := part.delete()
 	if err != nil {
 		return fmt.Errorf("error in os.Remove: %w", err)
 	}
