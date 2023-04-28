@@ -1,4 +1,4 @@
-# Firescroll
+# Firescroll 
 
 The unkillable KV database with unlimited read throughput. 
 
@@ -6,12 +6,13 @@ Perfect for configuration management at scale where you want global low-latency 
 
 <!-- TOC -->
 * [Firescroll](#firescroll)
+  * [Quick Note](#quick-note)
   * [API](#api)
-    * [Put Record(s) `POST /put`](#put-records-post-put)
-    * [Get Record(s) `POST /get`](#get-records-post-get)
-    * [Delete Record(s) `POST /delete`](#delete-records-post-delete)
-    * [List Records `POST /list`](#list-records-post-list)
-    * [Batch Put and Delete Records `POST /batch`](#batch-put-and-delete-records-post-batch)
+    * [Put Record(s) `POST /records/put`](#put-records-post-recordsput)
+    * [Get Record(s) `POST /records/get`](#get-records-post-recordsget)
+    * [Delete Record(s) `POST /records/delete`](#delete-records-post-recordsdelete)
+    * [List Records `POST /records/list`](#list-records-post-recordslist)
+    * [Batch Put and Delete Records `POST /records/batch`](#batch-put-and-delete-records-post-recordsbatch)
   * [Configuration](#configuration)
   * [The `If` statement](#the-if-statement)
     * [Examples:](#examples)
@@ -26,10 +27,13 @@ Perfect for configuration management at scale where you want global low-latency 
     * [Mutations](#mutations)
     * [Partitions](#partitions)
   * [Backups and Snapshotting](#backups-and-snapshotting)
+  * [Recommended Redpanda/Kafka Settings](#recommended-redpandakafka-settings)
   * [Architecture](#architecture)
     * [Storage engine](#storage-engine)
+    * [Tables](#tables)
     * [Gossip](#gossip)
     * [Mapping log topic partitions to nodes](#mapping-log-topic-partitions-to-nodes)
+    * [Partition initialization process](#partition-initialization-process)
   * [Performance and Benchmarking](#performance-and-benchmarking)
 <!-- TOC -->
 
@@ -71,11 +75,17 @@ If any condition fails, then all operations will be aborted
 
 ## Configuration
 
-| Env Var            | Type   | Description                                                                                                                                                                                          | Required | Default Value |
-|--------------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------------|
-| `REPLICA_GROUP`    | string | The name of the replica group, directly used as the Kafka consumer group name.                                                                                                                       | Yes      |               |
-| `BACKUP`           | bool   | Whether this node will create backups of its partitions. Set to `true` to enable backups. See [the backups section for more](#backups-and-snapshotting).                                             | No       |               |
-| `KAFKA_SESSION_MS` | int    | The session timeout in milliseconds used for the Kafka consumer. See [recommended settings](#recommended-redpandakafka-settings) for more as you will probably need to adjust your cluster settings. | No       | 60000         |
+All environment variables are imported and validated in files called `env.go`. They exist in the various packages based on scope. You can also visit the test files to see what needs to be specified.
+
+| Env Var              | Description                                                                                                 | Type              |
+|----------------------|-------------------------------------------------------------------------------------------------------------|-------------------|
+| `NAMESPACE`          | global, should be the same for all regions                                                                  | string            |
+| `REPLICA_GROUP`      | per replica in a region                                                                                     | string            |
+| `INSTANCE_ID`        | unique to the node                                                                                          | string            |
+| `TOPIC_RETENTION_MS` | configured in Kafka, but Firescroll needs to know for backup management!                                    | int               |
+| `PARTITIONS`         | default 256, but must be the same as Kafka, and cannot change!                                              | int (optional)    |
+| `PEERS`              | CSV of (domain/ip):port for gossip peers. If omitted then GET request for other partitions will be ignored. | string (optional) |
+
 
 
 ## The `If` statement
