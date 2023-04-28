@@ -11,7 +11,7 @@ var (
 	Env_NumPartitions    = MustEnvOrDefaultInt64("PARTITIONS", 256)
 	Env_TopicRetentionMS = MustEnvInt64("TOPIC_RETENTION_MS")
 
-	Env_DBPath = EnvOrDefault("DB_PATH", "/var/fanoutdb/db")
+	Env_DBPath = EnvOrDefault("DB_PATH", "/var/firescroll/db")
 
 	Env_APIPort = EnvOrDefault("API_PORT", "8070")
 )

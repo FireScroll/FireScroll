@@ -1,7 +1,7 @@
 package internal
 
 import (
-	"github.com/danthegoodman1/FanoutDB/utils"
+	"github.com/danthegoodman1/Firescroll/utils"
 )
 
 var (

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/danthegoodman1/FanoutDB/gologger"
-	"github.com/danthegoodman1/FanoutDB/syncx"
-	"github.com/danthegoodman1/FanoutDB/utils"
+	"github.com/danthegoodman1/Firescroll/gologger"
+	"github.com/danthegoodman1/Firescroll/syncx"
+	"github.com/danthegoodman1/Firescroll/utils"
 	"os"
 )
 

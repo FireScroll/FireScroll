@@ -1,11 +1,11 @@
-# FanoutDB
+# Firescroll
 
 The unkillable KV database with unlimited read throughput. 
 
 Perfect for configuration management at scale where you want global low-latency reads without caching or cold first reads.
 
 <!-- TOC -->
-* [FanoutDB](#fanoutdb)
+* [Firescroll](#firescroll)
   * [API](#api)
     * [Put Record(s) `POST /put`](#put-records-post-put)
     * [Get Record(s) `POST /get`](#get-records-post-get)
@@ -156,7 +156,7 @@ All writes will pass through the log cluster.
 > 
 > This will break the namespace if you do not know **exactly** what you are doing.
 
-When a namespace is created, 2 topic within Redpanda are created: `fanoutdb_{namespace}_mutations` and `fanountdb_{namespace}_partitions`.
+When a namespace is created, 2 topic within Redpanda are created: `firescroll_{namespace}_mutations` and `fanountdb_{namespace}_partitions`.
 
 ### Mutations
 
@@ -198,7 +198,7 @@ Set session timeout high enough for restart of nodes.
 
 ## Architecture
 
-TL,DR: FanoutDB is different by delegating the distributed nature to the log, and playing dumb about materializing the log to snapshots. It them provides a nice API for conditional querying.
+TL,DR: Firescroll is different by delegating the distributed nature to the log, and playing dumb about materializing the log to snapshots. It them provides a nice API for conditional querying.
 
 Even more TL,DR: it's a fancy wrapper around a log for fanning-out reads.
 
@@ -206,7 +206,7 @@ By centralizing the writes to a single log cluster we can ensure low-latency dur
 
 Like other eventually consistent databases, this means that read-after-write is not guaranteed is determined by how quickly the mutation is propagated. This use case is acceptable for most KV requirements like serving configurations (DNS records, feature flags, etc.)
 
-FanoutDB optimizes for low-latency high-throughput reads from all points of presence, with the worst case performance being one network hop in the local cluster to serve the read.
+Firescroll optimizes for low-latency high-throughput reads from all points of presence, with the worst case performance being one network hop in the local cluster to serve the read.
 
 We are effectively decoupling the local WAL and the compaction to pages as would be found in a traditional DB.
 

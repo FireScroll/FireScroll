@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"github.com/danthegoodman1/FanoutDB/api"
-	"github.com/danthegoodman1/FanoutDB/gologger"
-	"github.com/danthegoodman1/FanoutDB/internal"
-	"github.com/danthegoodman1/FanoutDB/log_consumer"
-	"github.com/danthegoodman1/FanoutDB/partitions"
-	"github.com/danthegoodman1/FanoutDB/utils"
+	"github.com/danthegoodman1/Firescroll/api"
+	"github.com/danthegoodman1/Firescroll/gologger"
+	"github.com/danthegoodman1/Firescroll/internal"
+	"github.com/danthegoodman1/Firescroll/log_consumer"
+	"github.com/danthegoodman1/Firescroll/partitions"
+	"github.com/danthegoodman1/Firescroll/utils"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
@@ -21,7 +21,7 @@ var (
 )
 
 func main() {
-	logger.Info().Msg("starting FanoutDB")
+	logger.Info().Msg("starting Firescroll")
 	g := errgroup.Group{}
 	g.Go(func() error {
 		logger.Debug().Msg("starting internal server")

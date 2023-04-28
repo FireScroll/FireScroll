@@ -15,7 +15,7 @@ tasks:
       - DB_PATH="./dbs2" INSTANCE_ID=testinstance2 INTERNAL_PORT=8092 API_PORT=8071 go run .
   docker:
     cmds:
-      - docker build . -t fanoutdb:latest --ssh default
+      - docker build . -t firescroll:latest --ssh default
   linux_amd:
     cmds:
       - GOOS=linux GOARCH=amd64 go build .

@@ -45,7 +45,7 @@ RUN tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz
 
 COPY services.d /etc/services.d
 RUN chmod +x /etc/services.d/cockroach/run
-RUN chmod +x /etc/services.d/fanout/run
+RUN chmod +x /etc/services.d/firescroll/run
 RUN chmod +x /etc/services.d/redpanda/run
 
 COPY --from=build /app/outbin /app/

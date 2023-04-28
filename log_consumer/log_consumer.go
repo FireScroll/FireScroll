@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/danthegoodman1/FanoutDB/gologger"
-	"github.com/danthegoodman1/FanoutDB/partitions"
-	"github.com/danthegoodman1/FanoutDB/utils"
+	"github.com/danthegoodman1/Firescroll/gologger"
+	"github.com/danthegoodman1/Firescroll/partitions"
+	"github.com/danthegoodman1/Firescroll/utils"
 	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -63,7 +63,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	logger.Debug().Msgf("using mutation log %s and partition log %s", consumer.MutationTopic, partitionTopic)
 	cl, err := kgo.NewClient(
 		kgo.SeedBrokers(seeds...),
-		kgo.ClientID("fanoutdb"),
+		kgo.ClientID("firescroll"),
 		kgo.InstanceID(utils.Env_InstanceID),
 		kgo.ConsumerGroup(consumerGroup),
 		kgo.ConsumeTopics(consumer.MutationTopic),
@@ -168,12 +168,12 @@ func simplePollRecords(ctx context.Context, client *kgo.Client) ([]*kgo.Record, 
 
 func formatMutationTopic(namespace string) string {
 	// TODO: check for underscores and panic
-	return fmt.Sprintf("fanoutdb_%s_mutations", namespace)
+	return fmt.Sprintf("firescroll_%s_mutations", namespace)
 }
 
 func formatPartitionTopic(namespace string) string {
 	// TODO: check for underscores and panic
-	return fmt.Sprintf("fanoutdb_%s_partitions", namespace)
+	return fmt.Sprintf("firescroll_%s_partitions", namespace)
 }
 
 func (lc *LogConsumer) Shutdown() error {

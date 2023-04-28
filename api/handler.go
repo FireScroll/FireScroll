@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/danthegoodman1/FanoutDB/partitions"
+	"github.com/danthegoodman1/Firescroll/partitions"
 	"github.com/labstack/echo/v4"
 	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kgo"

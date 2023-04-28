@@ -1,4 +1,4 @@
-module github.com/danthegoodman1/FanoutDB
+module github.com/danthegoodman1/Firescroll
 
 go 1.20
 

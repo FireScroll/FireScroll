@@ -6,7 +6,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"github.com/danthegoodman1/FanoutDB/utils"
+	"github.com/danthegoodman1/Firescroll/utils"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"path"
