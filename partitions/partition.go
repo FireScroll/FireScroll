@@ -219,7 +219,7 @@ func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) 
 		}
 		stored.Data = data
 
-		err = txn.Set(key, stored.Serialize())
+		err = txn.Set(key, stored.MustSerialize())
 		if err != nil {
 			return fmt.Errorf("error setting record: %w", err)
 		}

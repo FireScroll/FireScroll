@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/danthegoodman1/Firescroll/partitions"
+	"github.com/danthegoodman1/Firescroll/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 )
 
@@ -32,23 +33,40 @@ func (s *HTTPServer) handleMutation(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	// TODO: Group and publish by partition
-	err := s.lc.Client.ProduceSync(c.Request().Context(), lo.Map(reqBody.Records, func(item partitions.RecordMutation, index int) *kgo.Record {
-		item.Mutation = partitions.Operation(c.Param("op"))
-		jsonB, err := json.Marshal(item)
+	// Break up and produce by partition
+	partMap := map[int32][]*kgo.Record{}
+	for _, mut := range reqBody.Records {
+		mut.Mutation = partitions.Operation(c.Param("op"))
+		jsonB, err := json.Marshal(mut)
 		if err != nil {
-			// TODO: handle without lo package
 			logger.Fatal().Err(err).Msg("error marshalling json, exiting")
 		}
-		return &kgo.Record{
-			Key:     []byte(item.Pk),
+		record := &kgo.Record{
+			Key:     []byte(mut.Pk),
 			Value:   jsonB,
 			Topic:   s.lc.MutationTopic,
 			Context: c.Request().Context(),
 		}
-	})...).FirstErr()
+		partID := utils.GetPartition(mut.Pk)
+		part, exists := partMap[partID]
+		if !exists {
+			partMap[partID] = []*kgo.Record{record}
+			continue
+		}
+		part = append(part, record)
+	}
+	g := errgroup.Group{}
+	for partID, records := range partMap {
+		r := records // var reuse protection
+		p := partID
+		g.Go(func() error {
+			logger.Debug().Msgf("producing %d items for partition %d", len(r), p)
+			return s.lc.Client.ProduceSync(c.Request().Context(), r...).FirstErr()
+		})
+	}
+	err := g.Wait()
 	if err != nil {
-		return fmt.Errorf("error in ProduceSync: %w", err)
+		return fmt.Errorf("error in produce group: %w", err)
 	}
 
 	return c.String(http.StatusOK, "ok")

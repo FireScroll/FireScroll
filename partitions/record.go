@@ -27,8 +27,7 @@ func (sr StoredRecord) Record(pk, sk string) Record {
 	}
 }
 
-// Serialize will serialize a record, panicking on failure
-func (sr StoredRecord) Serialize() []byte {
+func (sr StoredRecord) MustSerialize() []byte {
 	b, err := json.Marshal(sr)
 	if err != nil {
 		panic(err)
