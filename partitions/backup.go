@@ -45,6 +45,8 @@ func (p *Partition) runBackup() error {
 		// nothing to backup
 		return nil
 	}
+	p.BackupWg.Add(1)
+	defer p.BackupWg.Done()
 	uploader := s3manager.NewUploader(p.s3Session)
 	pr, pw := io.Pipe()
 	key := fmt.Sprintf("firescroll/%s/%d-%d.bdb", p.Namespace, p.ID, *p.LastOffset)

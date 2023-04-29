@@ -135,6 +135,7 @@ func (p *Partition) gcTickHandler() {
 		select {
 		case <-p.GCTicker.C:
 			// TODO: check for active backup and wait on channel
+			p.BackupWg.Wait()
 			logger.Debug().Msgf("running garbage collection for partition %d", p.ID)
 			var err error
 			for err == nil {
