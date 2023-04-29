@@ -28,7 +28,7 @@ func main() {
 		return internal.StartServer()
 	})
 
-	partitionManager, err := partitions.NewPartitionManager()
+	partitionManager, err := partitions.NewPartitionManager(utils.Env_Namespace)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("error creating partition manager")
 	}

@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"github.com/danthegoodman1/Firescroll/gologger"
+	"github.com/danthegoodman1/Firescroll/utils"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"net/http"
@@ -15,13 +16,13 @@ var (
 )
 
 func StartServer() error {
-	logger.Debug().Msgf("Starting internal http server on port %s", Env_InternalPort)
+	logger.Debug().Msgf("Starting internal http server on port %s", utils.Env_InternalPort)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 
 	httpServer = &http.Server{
-		Addr:    fmt.Sprintf(":%s", Env_InternalPort),
+		Addr:    fmt.Sprintf(":%s", utils.Env_InternalPort),
 		Handler: mux,
 	}
 	go func() {

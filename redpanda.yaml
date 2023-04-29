@@ -1,2 +1,0 @@
-redpanda:
-  auto_create_topics_enabled: true

@@ -21,13 +21,15 @@ var (
 type (
 	PartitionManager struct {
 		Partitions syncx.Map[int32, *Partition]
+		Namespace  string
 	}
 )
 
-func NewPartitionManager() (*PartitionManager, error) {
+func NewPartitionManager(namespace string) (*PartitionManager, error) {
 	logger.Debug().Msg("creating new partition manager")
 	pm := &PartitionManager{
 		Partitions: syncx.Map[int32, *Partition]{},
+		Namespace:  namespace,
 	}
 
 	return pm, nil
@@ -54,7 +56,7 @@ func (pm *PartitionManager) AddPartition(id int32) (int64, error) {
 	// Create the dir if we need
 	_ = os.MkdirAll(utils.Env_DBPath, 0777)
 
-	part, err := newPartition(id)
+	part, err := newPartition(pm.Namespace, id)
 	if err != nil {
 		return 0, fmt.Errorf("error in newPartition: %w", err)
 	}
