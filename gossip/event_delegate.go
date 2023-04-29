@@ -9,21 +9,20 @@ type eventDelegate struct {
 }
 
 func (ed *eventDelegate) NotifyJoin(node *memberlist.Node) {
-	logger.Warn().Msg("A node has joined: " + node.String())
+	logger.Debug().Msg("A node has joined: " + node.String())
 	if ed.gm.broadcasts != nil {
 		// Broadcast out advertise address and port
-		//go ed.gm.broadcastAdvertiseAddress()
+		go ed.gm.broadcastAdvertiseMessage()
 	}
 }
 
 func (ed *eventDelegate) NotifyLeave(node *memberlist.Node) {
-	logger.Warn().Msg("A node has left: " + node.Name)
+	logger.Debug().Msg("A node has left: " + node.Name)
 	if node.Name != ed.gm.Node.ID {
-		//go ed.gm.deletePartitionFromIndex(node.Name)
-		//go ed.gm.deletePartitionFromTopicIndex(node.Name)
+		go ed.gm.removePartitionsForAddr(node.Name)
 	}
 }
 
 func (ed *eventDelegate) NotifyUpdate(node *memberlist.Node) {
-	logger.Warn().Msg("A node was updated: " + node.String())
+	logger.Trace().Msg("A node was updated: " + node.String())
 }

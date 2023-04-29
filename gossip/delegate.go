@@ -51,61 +51,30 @@ func (d *delegate) MergeRemoteState(buf []byte, join bool) {
 }
 
 func handleDelegateMsg(d *delegate, b []byte) {
-	logger.Warn().Str("nodeID", d.GossipManager.Node.ID).Str("broadcast", string(b)).Msg("Got msg")
+	logger.Trace().Str("nodeID", d.GossipManager.Node.ID).Str("broadcast", string(b)).Msg("Got msg")
 	if len(b) == 0 {
 		return
 	}
 
-	//dec := msgpack.NewDecoder(bytes.NewBuffer(b))
-	//msgType, err := dec.Query("Type")
-	//if err != nil {
-	//	logger.Error().Err(err).Str("partition", d.GossipManager.UltraQ.Partition).Msg("failed to get delegate msg 'Type'")
-	//	return
-	//}
-	//
-	//msgTypeStr, ok := msgType[0].(string)
-	//if !ok {
-	//	logger.Error().Err(err).Str("partition", d.GossipManager.UltraQ.Partition).Interface("msgType", msgType).Msg("failed to parse msg type to string")
-	//	return
-	//}
-	//
-	//// TODO: Handle duplicate messages from gossip so we don't triple process them?
-	//switch msgTypeStr {
-	//case "ptlu":
-	//	var ptlu *PartitionTopicLengthUpdate
-	//	err := msgpack.Unmarshal(b, &ptlu)
-	//	if err != nil {
-	//		logger.Error().Err(err).Str("partition", d.GossipManager.UltraQ.Partition).Msg("failed to unmarshal msgpack")
-	//		return
-	//	}
-	//	// TODO: Remove log line
-	//	logger.Debug().Str("partition", d.GossipManager.UltraQ.Partition).Interface("ptlu", ptlu).Msg("unpacked partition topic length update")
-	//	go d.GossipManager.putIndexRemotePartitionTopicLength(ptlu.Partition, ptlu.Topic, ptlu.Length)
-	//
-	//case "paa":
-	//	var paa *PartitionAddressAdvertise
-	//	err := msgpack.Unmarshal(b, &paa)
-	//	if err != nil {
-	//		logger.Error().Err(err).Str("partition", d.GossipManager.UltraQ.Partition).Msg("failed to unmarshal msgpack")
-	//		return
-	//	}
-	//	// TODO: Remove log line
-	//	logger.Debug().Str("partition", d.GossipManager.UltraQ.Partition).Interface("paa", paa).Msg("unpacked partition advertise address message")
-	//	if paa.Partition == d.GossipManager.UltraQ.Partition {
-	//		logger.Warn().Str("partition", d.GossipManager.UltraQ.Partition).Msg("Got paa for self, ignoring")
-	//		return
-	//	}
-	//	d.GossipManager.PartitionIndexMu.Lock()
-	//	defer d.GossipManager.PartitionIndexMu.Unlock()
-	//	d.GossipManager.PartitionIndex[paa.Partition] = &Node{
-	//		ID:           paa.Partition,
-	//		AdvertiseAddress: paa.Address,
-	//		AdvertisePort:    paa.Port,
-	//		LastUpdated:      time.Now(),
-	//	}
-	//
-	//default:
-	//	logger.Error().Err(err).Str("partition", d.GossipManager.UltraQ.Partition).Str("msgType", msgTypeStr).Msg("unknown message type")
-	//	return
-	//}
+	var msg GossipMessage
+	err := json.Unmarshal(b, &msg)
+	if err != nil {
+		logger.Error().Err(err).Str("msg", string(b)).Msg("error unmarshaling gossip message")
+		return
+	}
+
+	switch msg.MsgType {
+	case AdvertiseMessage:
+		newParts, removedParts := d.GossipManager.checkForPartitionDifference(msg.Partitions, msg.Addr)
+		if len(removedParts) > 0 {
+			logger.Trace().Msgf("remote addr %s dropped partitions %+v", msg.Addr, removedParts)
+			d.GossipManager.removeRemotePartitions(removedParts, msg.Addr)
+		}
+		if len(newParts) > 0 {
+			logger.Trace().Msgf("remote addr %s added partitions %+v", msg.Addr, newParts)
+			d.GossipManager.addRemotePartitions(newParts, msg.Addr)
+		}
+	default:
+		logger.Error().Str("msg", string(b)).Msg("unknown gossip message")
+	}
 }
