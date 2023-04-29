@@ -78,12 +78,24 @@ func (p *Partition) getLatestBackupOffset(ctx context.Context) (int64, string, e
 	}
 	svc := s3.New(p.s3Session)
 	newestBackup := ""
+	var newestOffset int64 = 0
 	err := svc.ListObjectsV2PagesWithContext(ctx, params, func(output *s3.ListObjectsV2Output, _ bool) bool {
-		// TODO: might need some nil and length checking here
 		if len(output.Contents) == 0 {
 			return true
 		}
-		newestBackup = *output.Contents[len(output.Contents)-1].Key
+		for _, content := range output.Contents {
+			thisKey := *content.Key
+			parts := strings.Split(thisKey, "/")
+			thisOffset, err := strconv.ParseInt(strings.Split(strings.Split(parts[len(parts)-1], "-")[1], ".bdb")[0], 10, 64)
+			if err != nil {
+				logger.Error().Err(err).Msgf("bad conversion of int from backup path %s, skipping", thisKey)
+				return true
+			}
+			if thisOffset > newestOffset {
+				newestOffset = thisOffset
+				newestBackup = thisKey
+			}
+		}
 		return true
 	})
 	if err != nil {
@@ -95,11 +107,7 @@ func (p *Partition) getLatestBackupOffset(ctx context.Context) (int64, string, e
 		return 0, "", ErrBackupNotFound
 	}
 
-	parts := strings.Split(newestBackup, "/")
-	offsetString := strings.Split(strings.Split(parts[len(parts)-1], "-")[1], ".bdb")[0]
-	offset, err := strconv.ParseInt(offsetString, 10, 64)
-
-	return offset, newestBackup, nil
+	return newestOffset, newestBackup, nil
 }
 
 func (p *Partition) checkAndRestoreFromS3() error {
