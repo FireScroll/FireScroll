@@ -26,6 +26,9 @@ type Manager struct {
 	MemberList *memberlist.Memberlist
 
 	PartitionManager *partitions.PartitionManager
+
+	broadcastTicker *time.Ticker
+	closeChan       chan struct{}
 }
 
 type Node struct {
@@ -52,6 +55,8 @@ func NewGossipManager(pm *partitions.PartitionManager) (gm *Manager, err error) 
 	gm = &Manager{
 		Node:             myNode,
 		PartitionManager: pm,
+		closeChan:        make(chan struct{}, 1),
+		broadcastTicker:  time.NewTicker(time.Millisecond * time.Duration(utils.Env_GossipBroadcastMS)),
 	}
 
 	var config *memberlist.Config
@@ -104,6 +109,7 @@ func NewGossipManager(pm *partitions.PartitionManager) (gm *Manager, err error) 
 	logger.Info().Str("name", node.Name).Str("addr", node.Address()).Int("port", int(node.Port)).Msg("Node started")
 
 	gm.broadcastAdvertiseMessage()
+	go gm.startBroadcastLoop()
 
 	return gm, nil
 }
@@ -129,10 +135,25 @@ func (gm *Manager) broadcastAdvertiseMessage() {
 	})
 }
 
+func (gm *Manager) startBroadcastLoop() {
+	logger.Debug().Msg("starting broadcast loop")
+	for {
+		select {
+		case <-gm.broadcastTicker.C:
+			gm.broadcastAdvertiseMessage()
+		case <-gm.closeChan:
+			logger.Debug().Msg("broadcast ticker received on close channel, exiting")
+			return
+		}
+	}
+}
+
 func (gm *Manager) Shutdown() error {
+	gm.broadcastTicker.Stop()
+	gm.closeChan <- struct{}{}
 	err := gm.MemberList.Leave(time.Second * 10)
 	if err != nil {
-		return fmt.Errorf("error in <MemberList.Leave: %w", err)
+		return fmt.Errorf("error in MemberList.Leave: %w", err)
 	}
 	err = gm.MemberList.Shutdown()
 	if err != nil {

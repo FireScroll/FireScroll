@@ -19,7 +19,8 @@ var (
 	Env_GossipPort    = MustEnvOrDefaultInt64("GOSSIP_PORT", 8192)
 	Env_AdvertiseAddr = os.Getenv("ADVERTISE_ADDR") // API, e.g. localhost:8190
 	// csv like localhost:8192,localhost:8292
-	Env_GossipPeers = os.Getenv("GOSSIP_PEERS")
+	Env_GossipPeers       = os.Getenv("GOSSIP_PEERS")
+	Env_GossipBroadcastMS = MustEnvOrDefaultInt64("GOSSIP_BROADCAST_MS", 500)
 
 	Env_GCIntervalMs      = MustEnvOrDefaultInt64("GC_INTERVAL_MS", 60_000*5) // 5 minute default
 	Env_DBPath            = EnvOrDefault("DB_PATH", "/var/firescroll/dbs")
