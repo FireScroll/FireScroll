@@ -1,5 +1,5 @@
 ### Put records
-POST http://localhost:8070/records/put
+POST http://localhost:8190/records/put
 Content-Type: application/json
 
 {
@@ -22,7 +22,7 @@ Content-Type: application/json
 }
 
 ### Get records
-POST http://localhost:8070/records/get
+POST http://localhost:8190/records/get
 Content-Type: application/json
 
 {
@@ -43,7 +43,7 @@ Content-Type: application/json
 }
 
 ### Delete records
-POST http://localhost:8070/records/delete
+POST http://localhost:8190/records/delete
 Content-Type: application/json
 
 {

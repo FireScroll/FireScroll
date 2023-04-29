@@ -14,9 +14,12 @@ var (
 	Env_TopicRetentionMS = MustEnvInt64("TOPIC_RETENTION_MS")
 	Env_KafkaSeeds       = MustEnv("KAFKA_SEEDS")
 
-	Env_InternalPort = EnvOrDefault("INTERNAL_PORT", "8091")
-
-	Env_APIPort = EnvOrDefault("API_PORT", "8070")
+	Env_APIPort       = EnvOrDefault("API_PORT", "8190")
+	Env_InternalPort  = EnvOrDefault("INTERNAL_PORT", "8191")
+	Env_GossipPort    = MustEnvOrDefaultInt64("GOSSIP_PORT", 8192)
+	Env_AdvertiseAddr = os.Getenv("ADVERTISE_ADDR") // API, e.g. localhost:8190
+	// csv like localhost:8192,localhost:8292
+	Env_GossipPeers = os.Getenv("GOSSIP_PEERS")
 
 	Env_GCIntervalMs      = MustEnvOrDefaultInt64("GC_INTERVAL_MS", 60_000*5) // 5 minute default
 	Env_DBPath            = EnvOrDefault("DB_PATH", "/var/firescroll/dbs")
@@ -34,4 +37,5 @@ var (
 
 	Env_Debug       = os.Getenv("DEBUG") == "1"
 	Env_BadgerDebug = os.Getenv("BADGER_DEBUG") == "1"
+	Env_GossipDebug = os.Getenv("GOSSIP_DEBUG") == "1"
 )
