@@ -244,7 +244,7 @@ func (consumer *LogConsumer) topicInfoLoop() {
 		logger.Info().Msgf("got new partitions: %+v", news)
 		resetPartitions := make([]struct {
 			ID     int32
-			Offset int64
+			Offset *int64
 		}, len(news))
 		logger.Debug().Msgf("pausing partitions %+v", news)
 		mutationTopic := formatMutationTopic(consumer.Namespace)
@@ -259,16 +259,14 @@ func (consumer *LogConsumer) topicInfoLoop() {
 			g.Go(func() error {
 				offset, err := consumer.PartitionManager.AddPartition(newPart)
 				if err != nil {
-					logger.Fatal().Err(err).Msg("error adding partition, exiting")
+					return err
 				}
-				if offset == 0 {
+				if offset == nil {
 					logger.Info().Msgf("new partition: %d", newPart)
-				} else {
-					logger.Info().Msgf("restoring partition %d at offset %d", newPart, offset)
 				}
 				resetPartitions[ind] = struct {
 					ID     int32
-					Offset int64
+					Offset *int64
 				}{ID: newPart, Offset: offset}
 				return nil
 			})
@@ -280,8 +278,13 @@ func (consumer *LogConsumer) topicInfoLoop() {
 		// Reset partition offsets
 		offsetMap := map[int32]kgo.EpochOffset{}
 		for _, resetPart := range resetPartitions {
+			var resetOffset int64 = 0
+			if resetPart.Offset != nil {
+				resetOffset = (*resetPart.Offset) + 1
+			}
+			logger.Debug().Msgf("resuming partition %d at offset %d", resetPart.ID, resetOffset)
 			offsetMap[resetPart.ID] = kgo.EpochOffset{
-				Offset: resetPart.Offset,
+				Offset: resetOffset,
 			}
 		}
 		consumer.Client.SetOffsets(map[string]map[int32]kgo.EpochOffset{
@@ -339,7 +342,9 @@ func (lc *LogConsumer) pollRecords(c context.Context) error {
 	fetches.EachPartition(func(part kgo.FetchTopicPartition) {
 		g.Go(func() error {
 			for _, record := range part.Records {
-				err := lc.PartitionManager.HandleMutation(part.Partition, record.Value, record.Offset)
+				r := record
+				logger.Debug().Msgf("got mutation for part %d at offset %d", r.Partition, r.Offset)
+				err := lc.PartitionManager.HandleMutation(part.Partition, r.Value, r.Offset)
 				if err != nil {
 					return fmt.Errorf("error in HandleMutation: %w", err)
 				}

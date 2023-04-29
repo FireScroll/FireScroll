@@ -44,13 +44,13 @@ func (pm *PartitionManager) GetPartitionIDs() (ids []int32) {
 }
 
 // AddPartition will return the timestamp in ms of the last seen row, if 0 it is a new partition
-func (pm *PartitionManager) AddPartition(id int32) (int64, error) {
+func (pm *PartitionManager) AddPartition(id int32) (*int64, error) {
 	logger.Debug().Msgf("adding partition %d", id)
 	// Check if we already have it
 	_, ok := pm.Partitions.Load(id)
 	if ok {
 		logger.Warn().Msgf("tried to add partition we already had: %d, no-op", id)
-		return 0, ErrPartitionAlreadyExists
+		return nil, ErrPartitionAlreadyExists
 	}
 
 	// Create the dir if we need
@@ -58,7 +58,7 @@ func (pm *PartitionManager) AddPartition(id int32) (int64, error) {
 
 	part, err := newPartition(pm.Namespace, id)
 	if err != nil {
-		return 0, fmt.Errorf("error in newPartition: %w", err)
+		return nil, fmt.Errorf("error in newPartition: %w", err)
 	}
 
 	//if part.LastOffset > 0 {
@@ -121,8 +121,6 @@ func (pm *PartitionManager) HandleMutation(partitionID int32, mutationBytes []by
 	if err != nil {
 		return fmt.Errorf("error in json.Unmarshal: %w", err)
 	}
-	// TODO: Remove log line
-	logger.Debug().Msgf("got handle mutation %d %d %d %s", partitionID, utils.GetPartition(mutation.Pk), offset, string(mutationBytes))
 	part, exists := pm.Partitions.Load(partitionID)
 	if !exists {
 		return ErrPartitionNotFound
@@ -135,19 +133,17 @@ func (pm *PartitionManager) HandleMutation(partitionID int32, mutationBytes []by
 }
 
 func (pm *PartitionManager) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record, error) {
-	// TODO: Remove log line
-	logger.Debug().Msg("got read record")
 	// Batch them per partitions
 	partMap := map[int32][]RecordKey{}
 	for _, key := range keys {
 		part := utils.GetPartition(key.Pk)
 		logger.Debug().Msgf("using partition %d for %+v", part, key)
-		partKeys, exists := partMap[part]
+		_, exists := partMap[part]
 		if !exists {
 			partMap[part] = []RecordKey{key}
 			continue
 		}
-		partKeys = append(partKeys, key)
+		partMap[part] = append(partMap[part], key)
 	}
 
 	results := make([]Record, 0)

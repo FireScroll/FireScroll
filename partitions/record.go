@@ -56,5 +56,6 @@ type RecordMutation struct {
 	Pk       string `validate:"require"`
 	Sk       string `validate:"require"`
 	Data     *map[string]any
+	TsMs     int64
 	Mutation Operation
 }

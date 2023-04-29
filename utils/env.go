@@ -12,6 +12,7 @@ var (
 	Env_KafkaSessionMs   = MustEnvOrDefaultInt64("KAFKA_SESSION_MS", 60_000)
 	Env_NumPartitions    = MustEnvInt64("PARTITIONS")
 	Env_TopicRetentionMS = MustEnvInt64("TOPIC_RETENTION_MS")
+	Env_KafkaSeeds       = MustEnv("KAFKA_SEEDS")
 
 	Env_InternalPort = EnvOrDefault("INTERNAL_PORT", "8091")
 
@@ -22,6 +23,7 @@ var (
 	Env_BackupEnabled     = os.Getenv("BACKUP") == "1"
 	Env_S3RestoreEnabled  = os.Getenv("S3_RESTORE") == "1"
 	Env_BackupIntervalSec = MustEnvOrDefaultInt64("BACKUP_INTERVAL_SEC", 60_000*12) // 12 hour default
+	Env_BackupTimeoutSec  = MustEnvOrDefaultInt64("BACKUP_TIMEOUT_SEC", 120)        // 12 hour default
 	Env_BackupS3Endpoint  = os.Getenv("S3_ENDPOINT")
 	Env_BackupS3Bucket    = os.Getenv("S3_BUCKET")
 	Env_BackupS3Region    = os.Getenv("AWS_REGION")

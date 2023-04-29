@@ -44,7 +44,7 @@ type (
 		ID int32
 		DB *badger.DB
 		// TODO: Maybe atomic?
-		LastOffset   int64
+		LastOffset   *int64
 		Namespace    string
 		GCTicker     *time.Ticker
 		BackupTicker *time.Ticker
@@ -83,13 +83,8 @@ func newPartition(namespace string, id int32) (*Partition, error) {
 		}
 	}
 
-	if utils.Env_BackupEnabled {
-		part.BackupTicker = time.NewTicker(time.Second * time.Duration(utils.Env_BackupIntervalSec))
-		go part.backupInterval()
-	}
-
 	if restored {
-		logger.Info().Msgf("partition %d restored", id)
+		logger.Info().Msgf("partition %d locally restored", id)
 		logger.Debug().Msgf("checking last seen time for partition %d", id)
 		// Get time if we have it
 		var b []byte
@@ -108,10 +103,26 @@ func newPartition(namespace string, id int32) (*Partition, error) {
 			return nil, fmt.Errorf("error getting LastOffsetKey: %w", err)
 		}
 		if len(b) > 0 {
-			part.LastOffset = int64(binary.LittleEndian.Uint64(b))
-			// TODO: remove log line
-			logger.Debug().Msgf("restored value of %d to partition %d", part.LastOffset, part.ID)
+			part.LastOffset = utils.Ptr(int64(binary.LittleEndian.Uint64(b)))
 		}
+	}
+
+	// Check for remote backup
+	if utils.Env_S3RestoreEnabled {
+		logger.Debug().Msgf("checking for s3 backups for partition %d", part.ID)
+		err := part.checkAndRestoreFromS3()
+		if errors.Is(err, ErrBackupNotFound) {
+			logger.Debug().Msgf("no remote backup found for partition %d", part.ID)
+		} else if errors.Is(err, ErrRemoteOffsetLower) {
+			logger.Debug().Msgf("remote backup for partition %d had a lower offset than locally, using local restore", part.ID)
+		} else if err != nil {
+			return nil, fmt.Errorf("error in checkAndRestoreFromS3: %w", err)
+		}
+	}
+
+	if utils.Env_BackupEnabled {
+		part.BackupTicker = time.NewTicker(time.Second * time.Duration(utils.Env_BackupIntervalSec))
+		go part.backupInterval()
 	}
 
 	go part.gcTickHandler()
@@ -225,7 +236,7 @@ func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record
 func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error {
 	switch mutation.Mutation {
 	case OperationPut:
-		return p.handlePut(mutation.Pk, mutation.Sk, *mutation.Data, offset)
+		return p.handlePut(mutation.Pk, mutation.Sk, *mutation.Data, offset, mutation.TsMs)
 	case OperationDelete:
 		return p.handleDelete(mutation.Pk, mutation.Sk, offset)
 	default:
@@ -233,15 +244,15 @@ func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error 
 	}
 }
 
-func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) error {
+func (p *Partition) handlePut(pk, sk string, data map[string]any, offset, tsMs int64) error {
 	// TODO: remove log line
 	logger.Debug().Msg("handling put")
 	key := formatRecordKey(pk, sk)
+	n := time.UnixMilli(tsMs)
 	return p.DB.Update(func(txn *badger.Txn) error {
 		var stored StoredRecord
 		item, err := txn.Get(key)
 		if errors.Is(err, badger.ErrKeyNotFound) {
-			n := time.Now()
 			stored.UpdatedAt = n
 			stored.CreatedAt = n
 		} else if err != nil {
@@ -256,7 +267,6 @@ func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) 
 			if err != nil {
 				return fmt.Errorf("error in json.Unmarshal: %w", err)
 			}
-			n := time.Now()
 			stored.UpdatedAt = n
 		}
 		stored.Data = data
@@ -273,11 +283,12 @@ func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) 
 // updateOffsetInTx handles the error message for you so you can just return it
 func (p *Partition) updateOffsetInTx(txn *badger.Txn, offset int64) error {
 	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, uint64(offset+1))
+	binary.LittleEndian.PutUint64(b, uint64(offset))
 	err := txn.Set(LastOffsetKey, b)
 	if err != nil {
 		return fmt.Errorf("error in setting offset: %w", err)
 	}
+	p.LastOffset = &offset
 	return nil
 }
 

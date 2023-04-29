@@ -36,7 +36,7 @@ func main() {
 	g.Go(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
-		lc, err := log_consumer.NewLogConsumer(ctx, utils.Env_Namespace, utils.Env_ReplicaGroupName, strings.Split("localhost:19092,localhost:29092,localhost:39092", ","), utils.Env_KafkaSessionMs, partitionManager)
+		lc, err := log_consumer.NewLogConsumer(ctx, utils.Env_Namespace, utils.Env_ReplicaGroupName, strings.Split(utils.Env_KafkaSeeds, ","), utils.Env_KafkaSessionMs, partitionManager)
 		logConsumer = lc
 		return err
 	})
