@@ -83,7 +83,7 @@ func NewGossipManager(pm *partitions.PartitionManager) (gm *Manager, err error) 
 	}
 	if !utils.Env_GossipDebug {
 		config.Logger = nil
-		config.LogOutput = nil
+		config.LogOutput = VoidWriter{}
 	}
 	config.Delegate = &delegate{
 		GossipManager: gm,

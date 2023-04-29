@@ -1,7 +1,6 @@
 package partitions
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -132,35 +131,18 @@ func (pm *PartitionManager) HandleMutation(partitionID int32, mutationBytes []by
 	return nil
 }
 
-func (pm *PartitionManager) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record, error) {
-	// Batch them per partitions
-	partMap := map[int32][]RecordKey{}
-	for _, key := range keys {
-		part := utils.GetPartition(key.Pk)
-		logger.Debug().Msgf("using partition %d for %+v", part, key)
-		_, exists := partMap[part]
+func (pm *PartitionManager) ReadRecords(partMap map[int32][]RecordKey) (records []Record, err error) {
+	for partition, keys := range partMap {
+		part, exists := pm.Partitions.Load(partition)
 		if !exists {
-			partMap[part] = []RecordKey{key}
-			continue
-		}
-		partMap[part] = append(partMap[part], key)
-	}
-
-	results := make([]Record, 0)
-	for partID, partKeys := range partMap {
-		// TODO: run partitions concurrently and join results
-		part, exists := pm.Partitions.Load(partID)
-		if !exists {
-			// TODO: Proxy request to correct partition
 			continue
 		}
 
-		res, err := part.ReadRecords(ctx, partKeys)
+		res, err := part.ReadRecords(keys)
 		if err != nil {
-			return nil, fmt.Errorf("error in ReadRecord for part %d: %w", partID, err)
+			err = fmt.Errorf("error in ReadRecord for part %d: %w", part, err)
 		}
-		results = append(results, res...)
+		records = append(records, res...)
 	}
-
-	return results, nil
+	return
 }

@@ -1,7 +1,6 @@
 package partitions
 
 import (
-	"context"
 	_ "embed"
 	"encoding/binary"
 	"encoding/json"
@@ -201,7 +200,7 @@ func getPartitionPath(id int32) string {
 	return path.Join(utils.Env_DBPath, fmt.Sprintf("%d.db", id))
 }
 
-func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record, error) {
+func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 	var records []Record
 
 	err := p.DB.View(func(txn *badger.Txn) error {

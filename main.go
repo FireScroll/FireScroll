@@ -54,7 +54,7 @@ func main() {
 		logger.Fatal().Err(err).Msg("Error starting services, exiting")
 	}
 
-	apiServer, err := api.StartServer(utils.Env_APIPort, partitionManager, logConsumer)
+	apiServer, err := api.StartServer(utils.Env_APIPort, partitionManager, logConsumer, gm)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("error starting api server")
 	}
