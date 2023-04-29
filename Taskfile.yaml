@@ -12,7 +12,7 @@ tasks:
       - go run .
   2:
     cmds:
-      - DB_PATH="./dbs2" INSTANCE_ID=testinstance2 INTERNAL_PORT=8092 API_PORT=8071 go run .
+      - DB_PATH="./dbs2" INSTANCE_ID=testinstance2 INTERNAL_PORT=8092 API_PORT=8071 BACKUP=1 KAFKA_SESSION_MS=7000 go run .
   docker:
     cmds:
       - docker build . -t firescroll:latest --ssh default

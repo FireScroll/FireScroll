@@ -7,12 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/danthegoodman1/Firescroll/utils"
 	"github.com/dgraph-io/badger/v4"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,15 +41,20 @@ const (
 
 type (
 	Partition struct {
-		ID         int32
-		DB         *badger.DB
-		LastOffset int64
-		GCTicker   *time.Ticker
-		closeChan  chan struct{}
+		ID int32
+		DB *badger.DB
+		// TODO: Maybe atomic?
+		LastOffset   *int64
+		Namespace    string
+		GCTicker     *time.Ticker
+		BackupTicker *time.Ticker
+		closeChan    chan struct{}
+		BackupWg     sync.WaitGroup
+		s3Session    *session.Session
 	}
 )
 
-func newPartition(id int32) (*Partition, error) {
+func newPartition(namespace string, id int32) (*Partition, error) {
 	db, restored, err := createLocalDB(id)
 	if err != nil {
 		return nil, fmt.Errorf("error in createLocalDB: %w", err)
@@ -56,11 +64,27 @@ func newPartition(id int32) (*Partition, error) {
 		ID:        id,
 		DB:        db,
 		GCTicker:  time.NewTicker(time.Millisecond * time.Duration(utils.Env_GCIntervalMs)),
-		closeChan: make(chan struct{}, 1),
+		closeChan: make(chan struct{}, 2), // gc and backup
+		BackupWg:  sync.WaitGroup{},
+		Namespace: namespace,
+	}
+
+	if utils.Env_BackupEnabled || utils.Env_S3RestoreEnabled {
+		// Other options use default AWS SDK env vars
+		logger.Debug().Msgf("configuring s3 session for partition %d", part.ID)
+		cfg := &aws.Config{
+			Endpoint:         &utils.Env_BackupS3Endpoint,
+			DisableSSL:       aws.Bool(strings.Contains(utils.Env_BackupS3Endpoint, "http://")),
+			S3ForcePathStyle: aws.Bool(true),
+		}
+		part.s3Session, err = session.NewSession(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("error in session.NewSession: %w", err)
+		}
 	}
 
 	if restored {
-		logger.Info().Msgf("partition %d restored", id)
+		logger.Info().Msgf("partition %d locally restored", id)
 		logger.Debug().Msgf("checking last seen time for partition %d", id)
 		// Get time if we have it
 		var b []byte
@@ -79,10 +103,26 @@ func newPartition(id int32) (*Partition, error) {
 			return nil, fmt.Errorf("error getting LastOffsetKey: %w", err)
 		}
 		if len(b) > 0 {
-			part.LastOffset = int64(binary.LittleEndian.Uint64(b))
-			// TODO: remove log line
-			logger.Debug().Msgf("restored value of %d to partition %d", part.LastOffset, part.ID)
+			part.LastOffset = utils.Ptr(int64(binary.LittleEndian.Uint64(b)))
 		}
+	}
+
+	// Check for remote backup
+	if utils.Env_S3RestoreEnabled {
+		logger.Debug().Msgf("checking for s3 backups for partition %d", part.ID)
+		err := part.checkAndRestoreFromS3()
+		if errors.Is(err, ErrBackupNotFound) {
+			logger.Debug().Msgf("no remote backup found for partition %d", part.ID)
+		} else if errors.Is(err, ErrRemoteOffsetLower) {
+			logger.Debug().Msgf("remote backup for partition %d had a lower offset than locally, using local restore", part.ID)
+		} else if err != nil {
+			return nil, fmt.Errorf("error in checkAndRestoreFromS3: %w", err)
+		}
+	}
+
+	if utils.Env_BackupEnabled {
+		part.BackupTicker = time.NewTicker(time.Second * time.Duration(utils.Env_BackupIntervalSec))
+		go part.backupInterval()
 	}
 
 	go part.gcTickHandler()
@@ -95,10 +135,20 @@ func (p *Partition) gcTickHandler() {
 		select {
 		case <-p.GCTicker.C:
 			// TODO: check for active backup and wait on channel
-			err := p.DB.RunValueLogGC(0.5)
-			logger.Error().Err(err).Int32("partition", p.ID).Msg("error running garbage collection! Non-fatal error, but the DB might get really big!")
+			logger.Debug().Msgf("running garbage collection for partition %d", p.ID)
+			var err error
+			for err == nil {
+				// suggested by docs
+				err = p.DB.RunValueLogGC(0.5)
+			}
+			if errors.Is(err, badger.ErrNoRewrite) {
+				logger.Debug().Msgf("garbage collection has nothing to rewrite for partition %d", p.ID)
+				continue
+			}
+			if err != nil {
+				logger.Error().Err(err).Int32("partition", p.ID).Msg("error running garbage collection! Non-fatal error, but the DB might get really big!")
+			}
 		case <-p.closeChan:
-			// TODO: Remove log line
 			logger.Debug().Msgf("gc ticker for partition %d received on close channel, exiting", p.ID)
 			return
 		}
@@ -114,6 +164,8 @@ func createLocalDB(id int32) (*badger.DB, bool, error) {
 		exists = true
 	}
 	opts := badger.DefaultOptions(partitionPath)
+	// If we are running into large file sizes, we can try setting NumLevelZeroTables to 0 or 1,
+	// and NumLevelZeroTablesStall to 1 or 2 as per https://github.com/dgraph-io/badger/issues/718#issuecomment-467886596
 	if !utils.Env_BadgerDebug {
 		opts.Logger = nil
 	}
@@ -139,7 +191,8 @@ func (p *Partition) delete() error {
 func (p *Partition) Shutdown() error {
 	logger.Debug().Msgf("shutting down partition %d", p.ID)
 	p.GCTicker.Stop()
-	p.closeChan <- struct{}{}
+	p.closeChan <- struct{}{} // gc
+	p.closeChan <- struct{}{} // backup
 	return p.DB.Close()
 }
 
@@ -183,7 +236,7 @@ func (p *Partition) ReadRecords(ctx context.Context, keys []RecordKey) ([]Record
 func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error {
 	switch mutation.Mutation {
 	case OperationPut:
-		return p.handlePut(mutation.Pk, mutation.Sk, *mutation.Data, offset)
+		return p.handlePut(mutation.Pk, mutation.Sk, *mutation.Data, offset, mutation.TsMs)
 	case OperationDelete:
 		return p.handleDelete(mutation.Pk, mutation.Sk, offset)
 	default:
@@ -191,15 +244,15 @@ func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error 
 	}
 }
 
-func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) error {
+func (p *Partition) handlePut(pk, sk string, data map[string]any, offset, tsMs int64) error {
 	// TODO: remove log line
 	logger.Debug().Msg("handling put")
 	key := formatRecordKey(pk, sk)
+	n := time.UnixMilli(tsMs)
 	return p.DB.Update(func(txn *badger.Txn) error {
 		var stored StoredRecord
 		item, err := txn.Get(key)
 		if errors.Is(err, badger.ErrKeyNotFound) {
-			n := time.Now()
 			stored.UpdatedAt = n
 			stored.CreatedAt = n
 		} else if err != nil {
@@ -214,7 +267,6 @@ func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) 
 			if err != nil {
 				return fmt.Errorf("error in json.Unmarshal: %w", err)
 			}
-			n := time.Now()
 			stored.UpdatedAt = n
 		}
 		stored.Data = data
@@ -231,11 +283,12 @@ func (p *Partition) handlePut(pk, sk string, data map[string]any, offset int64) 
 // updateOffsetInTx handles the error message for you so you can just return it
 func (p *Partition) updateOffsetInTx(txn *badger.Txn, offset int64) error {
 	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, uint64(offset+1))
+	binary.LittleEndian.PutUint64(b, uint64(offset))
 	err := txn.Set(LastOffsetKey, b)
 	if err != nil {
 		return fmt.Errorf("error in setting offset: %w", err)
 	}
+	p.LastOffset = &offset
 	return nil
 }
 

@@ -12,8 +12,8 @@ Content-Type: application/json
       }
     },
     {
-      "pk": "pk2",
-      "sk": "sk2",
+      "pk": "pk3",
+      "sk": "sk3",
       "data": {
         "lets": "go"
       }

@@ -9,6 +9,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 	"golang.org/x/sync/errgroup"
 	"net/http"
+	"time"
 )
 
 func (s *HTTPServer) operationHandler(c echo.Context) error {
@@ -34,8 +35,10 @@ func (s *HTTPServer) handleMutation(c echo.Context) error {
 	}
 
 	// Break up and produce by partition
+	nMS := time.Now().UnixMilli()
 	partMap := map[int32][]*kgo.Record{}
 	for _, mut := range reqBody.Records {
+		mut.TsMs = nMS
 		mut.Mutation = partitions.Operation(c.Param("op"))
 		jsonB, err := json.Marshal(mut)
 		if err != nil {
@@ -48,12 +51,12 @@ func (s *HTTPServer) handleMutation(c echo.Context) error {
 			Context: c.Request().Context(),
 		}
 		partID := utils.GetPartition(mut.Pk)
-		part, exists := partMap[partID]
+		_, exists := partMap[partID]
 		if !exists {
 			partMap[partID] = []*kgo.Record{record}
 			continue
 		}
-		part = append(part, record)
+		partMap[partID] = append(partMap[partID], record)
 	}
 	g := errgroup.Group{}
 	for partID, records := range partMap {
