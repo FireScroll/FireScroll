@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/Firescroll/gologger"
+	"github.com/danthegoodman1/Firescroll/gossip"
 	"github.com/danthegoodman1/Firescroll/log_consumer"
 	"github.com/danthegoodman1/Firescroll/partitions"
 	"github.com/go-playground/validator/v10"
@@ -46,9 +47,10 @@ type HTTPServer struct {
 	e  *echo.Echo
 	pm *partitions.PartitionManager
 	lc *log_consumer.LogConsumer
+	gm *gossip.Manager
 }
 
-func StartServer(port string, pm *partitions.PartitionManager, lc *log_consumer.LogConsumer) (*HTTPServer, error) {
+func StartServer(port string, pm *partitions.PartitionManager, lc *log_consumer.LogConsumer, gm *gossip.Manager) (*HTTPServer, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		return nil, fmt.Errorf("error in net.Listen: %w", err)
@@ -58,6 +60,7 @@ func StartServer(port string, pm *partitions.PartitionManager, lc *log_consumer.
 		e:  e,
 		pm: pm,
 		lc: lc,
+		gm: gm,
 	}
 	e.HideBanner = true
 	e.HidePort = true

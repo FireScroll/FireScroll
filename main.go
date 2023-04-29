@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/danthegoodman1/Firescroll/api"
 	"github.com/danthegoodman1/Firescroll/gologger"
+	"github.com/danthegoodman1/Firescroll/gossip"
 	"github.com/danthegoodman1/Firescroll/internal"
 	"github.com/danthegoodman1/Firescroll/log_consumer"
 	"github.com/danthegoodman1/Firescroll/partitions"
@@ -41,12 +42,19 @@ func main() {
 		return err
 	})
 
+	var gm *gossip.Manager
+	g.Go(func() error {
+		var err error
+		gm, err = gossip.NewGossipManager(partitionManager)
+		return err
+	})
+
 	err = g.Wait()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Error starting services, exiting")
 	}
 
-	apiServer, err := api.StartServer(utils.Env_APIPort, partitionManager, logConsumer)
+	apiServer, err := api.StartServer(utils.Env_APIPort, partitionManager, logConsumer, gm)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("error starting api server")
 	}
@@ -65,11 +73,13 @@ func main() {
 		logger.Info().Msgf("slept for %ds, exiting", utils.Env_SleepSeconds)
 	}
 
-	logger.Debug().Msg("closing kafka client")
-	logConsumer.Client.Close()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(utils.Env_SleepSeconds))
 	defer cancel()
+
+	err = gm.Shutdown()
+	if err != nil {
+		logger.Error().Err(err).Msg("error shutting down gossip manager, other nodes might take some extra time to evict this node but otherwise it's fine")
+	}
 
 	g = errgroup.Group{}
 	g.Go(func() error {

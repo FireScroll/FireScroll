@@ -52,10 +52,34 @@ func (r Record) StoredRecord() StoredRecord {
 	}
 }
 
+func (r Record) WithErr(err error) RecordWithError {
+	rwe := RecordWithError{
+		Pk:        r.Pk,
+		Sk:        r.Sk,
+		Data:      r.Data,
+		CreatedAt: r.CreatedAt,
+		UpdatedAt: r.UpdatedAt,
+	}
+	if err != nil {
+		rwe.Error = err.Error()
+	}
+	return rwe
+}
+
 type RecordMutation struct {
 	Pk       string `validate:"require"`
 	Sk       string `validate:"require"`
 	Data     *map[string]any
 	TsMs     int64
 	Mutation Operation
+}
+
+type RecordWithError struct {
+	Pk   string
+	Sk   string
+	Data map[string]any `json:",omitempty"`
+
+	CreatedAt time.Time `json:",omitempty"`
+	UpdatedAt time.Time `json:",omitempty"`
+	Error     string    `json:",omitempty"`
 }

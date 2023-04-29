@@ -218,7 +218,6 @@ func (consumer *LogConsumer) topicInfoLoop() {
 		return
 	}
 
-	logger.Debug().Msgf("member ID %s", member.MemberID)
 	var partitionCount int64 = 0
 	resp.AssignedPartitions().Each(func(t string, p int32) {
 		partitionCount++
