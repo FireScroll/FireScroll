@@ -250,7 +250,7 @@ func (gm *Manager) GetRandomRemotePartition(partition int32) (string, error) {
 	gm.remotePartMu.RLock()
 	defer gm.remotePartMu.RUnlock()
 	remoteParts := gm.getRemotePartitions(partition)
-	if remoteParts == nil {
+	if len(remoteParts) == 0 {
 		return "", ErrNoRemotePartitions
 	}
 	randInd := rand.Intn(len(remoteParts))

@@ -140,7 +140,7 @@ func (s *HTTPServer) handleGet(c echo.Context) error {
 		g.Go(func() error {
 			addr, err := s.gm.GetRandomRemotePartition(partition)
 			if errors.Is(err, gossip.ErrNoRemotePartitions) {
-				logger.Warn().Msgf("did not get any remote addresses for partition %d", partition)
+				logger.Warn().Msgf("did not get any remote addresses for partition %d, it probably shut down and the partition has not been reassigned yet", partition)
 				return nil
 			} else if err != nil {
 				return fmt.Errorf("error in GetRandomRemotePartition for partition %d: %w", partition, err)
