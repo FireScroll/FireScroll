@@ -24,10 +24,10 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
     * [Delete Record(s) `POST /records/delete`](#delete-records-post-recordsdelete)
     * [(WIP) List Records `POST /records/list`](#wip-list-records-post-recordslist)
     * [(WIP) Batch Put and Delete Records `POST /records/batch`](#wip-batch-put-and-delete-records-post-recordsbatch)
+  * [Quick Start (running locally)](#quick-start-running-locally)
   * [Setup](#setup)
     * [Mutations Topic](#mutations-topic)
     * [Partitions Topic](#partitions-topic)
-  * [Running Locally](#running-locally)
   * [Configuration](#configuration)
   * [(WIP) The `If` statement](#wip-the-if-statement)
     * [Examples:](#examples)
@@ -89,6 +89,24 @@ Multiple `Put` and `Delete` operations can be sent in a single request, which wi
 
 If any condition fails, then all operations will be aborted
 
+## Quick Start (running locally)
+
+To run locally:
+
+```
+bash up.sh
+```
+
+This will start Redpanda and Minio, and set up the topics with the namespace `testns`.
+
+From there go to `http://localhost:9001` and create a key pair in Minio to use with the bucket `testbucket` that was automatically created.
+
+Get some keys for minio, and copy the `.env.local` file to `.env`, replacing my local dev keys.
+
+You can then use [`task`](https://taskfile.dev/) to run the first node. This will initially grab all partitions. You can make mutations inside of [records.http](api/records.http) to see them work.
+
+You can then run `task 2` to bring up another node and watch as the partitions get rebalanced, and the new node restores from S3. If you make more get requests you will see in the logs that they are proxied to the other respective partition!
+
 ## Setup
 
 The first step is to create the following topics in Kafka:
@@ -111,18 +129,6 @@ rpk topic create firescroll_testns_partitions
 ### Partitions Topic
 
 The partitions topic is used to record the first found topic count, and allows nodes to check against this count so that they can crash if something changes (because now we don't know where data is). While the actual partitions are checked against in real time, this serves as an extra dummy check in case you change the partition count and update the env vars (since data is not currently re-partitioned). So it's just an extra redundancy check and only ever (intentionally) writes one record, and otherwise is read on node startup.
-
-## Running Locally
-
-To run locally:
-
-```
-bash up.sh
-```
-
-This will start Redpanda and Minio, and set up the topics with the namespace `testns`.
-
-From there go to `http://localhost:9001` and create a key pair in Minio to use with the bucket `testbucket` that was automatically created. 
 
 ## Configuration
 
