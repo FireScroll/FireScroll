@@ -98,7 +98,7 @@ docker compose up -d
 bash setup.sh
 ```
 
-Then get and replace minio keys.
+Then get and replace minio keys in the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars for `firescroll-1` and `firescroll-2`.
 
 ### Or build locally:
 
