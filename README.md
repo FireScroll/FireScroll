@@ -98,7 +98,7 @@ docker compose up -d
 bash setup.sh
 ```
 
-Then get and replace minio keys in the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars for `firescroll-1` and `firescroll-2` by visiting `http://localhost:9001` and create a key pair in Minio to use with the bucket `testbucket` that was automatically created.
+Then get and replace minio keys in the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars for `firescroll-1` and `firescroll-2` by visiting `http://localhost:9001` and creating credentials in the Minio dashboard to use with the bucket `testbucket` that was automatically created.
 
 ### Or build locally:
 
