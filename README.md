@@ -129,7 +129,7 @@ For all options, see [env.go](utils/env.go). Here are some notable ones:
 | Env Var                 | Description                                                                                                                                             | Type              |
 |-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|
 | `NAMESPACE`             | global, should be the same for all regions                                                                                                              | string            |
-| `REPLICA_GROUP`         | per replica in a region                                                                                                                                 | string            |
+| `REPLICA_GROUP`         | per replica in a region, maps to a Kafka consumer group. A replica group should only exist in one region, never spanning regions.                       | string            |
 | `INSTANCE_ID`           | unique to the node                                                                                                                                      | string            |
 | `TOPIC_RETENTION_MS`    | configured in Kafka, but Firescroll needs to know for backup management! (WIP for warnings)                                                             | int               |
 | `PARTITIONS`            | do not change this once you start consuming mutations. Firescroll will do it's best to refuse to work if it detects a change so data is not lost        | int               |
