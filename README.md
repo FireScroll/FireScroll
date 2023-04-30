@@ -96,6 +96,8 @@ Need:
 2. [Taskfile](https://taskfile.dev/)
 3. Docker
 
+[docker compose WIP](https://github.com/danthegoodman1/FireScroll/issues/26)
+
 To run locally:
 
 ```
