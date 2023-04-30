@@ -86,7 +86,7 @@ func (s *HTTPServer) handleMutation(c echo.Context) error {
 }
 
 type GetReq struct {
-	Keys []partitions.RecordKey `validate:"min=1"`
+	Records []partitions.RecordKey `validate:"min=1"`
 }
 type GetRes struct {
 	Results []partitions.Record
@@ -103,7 +103,7 @@ func (s *HTTPServer) handleGet(c echo.Context) error {
 	localKeys := map[int32][]partitions.RecordKey{}
 	remoteKeys := map[int32][]partitions.RecordKey{}
 
-	for _, key := range reqBody.Keys {
+	for _, key := range reqBody.Records {
 		part := utils.GetPartition(key.Pk)
 		logger.Debug().Msgf("using partition %d for %+v", part, key)
 		if lo.Contains(localPartitions, part) {
@@ -169,7 +169,7 @@ func (s *HTTPServer) handleGet(c echo.Context) error {
 
 func (s *HTTPServer) getRemoteRecords(ctx context.Context, addr string, keys []partitions.RecordKey) ([]partitions.Record, error) {
 	// TODO: encoders for encoding and decoding of bodies so no double allocation
-	b, err := json.Marshal(GetReq{Keys: keys})
+	b, err := json.Marshal(GetReq{Records: keys})
 	if err != nil {
 		return nil, fmt.Errorf("error in json.Marshal: %w", err)
 	}

@@ -26,7 +26,7 @@ POST http://localhost:8190/records/get
 Content-Type: application/json
 
 {
-  "Keys": [
+  "Records": [
     {
       "pk": "pk1",
       "sk": "sk1"

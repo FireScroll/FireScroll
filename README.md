@@ -1,46 +1,61 @@
 # Firescroll 
 
-The unkillable KV database with unlimited read throughput. 
+An unkillable distributed KV database with unlimited read throughput. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
 
 Perfect for configuration management at scale where you want global low-latency reads without caching or cold first reads.
 
+Useful for low-latency cases that can tolerate short cache-like behavior such as:
+- DNS providers (mapping a domain name to records)
+- Webhost routing (e.g. Vercel mapping your domain to your code)
+- Feature flagging
+- SSL certificate serving
+- CDN configs
+- and many more!
+
 <!-- TOC -->
 * [Firescroll](#firescroll-)
-  * [Quick Note](#quick-note)
+  * [Features](#features)
+  * [Quick Notes](#quick-notes)
   * [API](#api)
     * [Put Record(s) `POST /records/put`](#put-records-post-recordsput)
     * [Get Record(s) `POST /records/get`](#get-records-post-recordsget)
     * [Delete Record(s) `POST /records/delete`](#delete-records-post-recordsdelete)
-    * [List Records `POST /records/list`](#list-records-post-recordslist)
-    * [Batch Put and Delete Records `POST /records/batch`](#batch-put-and-delete-records-post-recordsbatch)
+    * [(WIP) List Records `POST /records/list`](#wip-list-records-post-recordslist)
+    * [(WIP) Batch Put and Delete Records `POST /records/batch`](#wip-batch-put-and-delete-records-post-recordsbatch)
   * [Setup](#setup)
     * [Mutations Topic](#mutations-topic)
     * [Partitions Topic](#partitions-topic)
+  * [Running Locally](#running-locally)
   * [Configuration](#configuration)
-  * [The `If` statement](#the-if-statement)
+  * [(WIP) The `If` statement](#wip-the-if-statement)
     * [Examples:](#examples)
       * [Check existence of a record](#check-existence-of-a-record)
-  * [Scaling read throughput](#scaling-read-throughput)
+  * [Scaling the cluster](#scaling-the-cluster)
     * [Scaling the replica group](#scaling-the-replica-group)
     * [Scaling the number of replica groups](#scaling-the-number-of-replica-groups)
     * [Scaling resources for the nodes](#scaling-resources-for-the-nodes)
     * [Scaling the log](#scaling-the-log)
-  * [Scaling writes throughput (the log)](#scaling-writes-throughput-the-log)
   * [Topic Management](#topic-management)
     * [Mutations](#mutations)
     * [Partitions](#partitions)
   * [Backups and Snapshotting](#backups-and-snapshotting)
   * [Recommended Redpanda/Kafka Settings](#recommended-redpandakafka-settings)
   * [Architecture](#architecture)
-    * [Storage engine](#storage-engine)
-    * [Tables](#tables)
-    * [Gossip](#gossip)
-    * [Mapping log topic partitions to nodes](#mapping-log-topic-partitions-to-nodes)
-    * [Partition initialization process](#partition-initialization-process)
-  * [Performance and Benchmarking](#performance-and-benchmarking)
 <!-- TOC -->
 
-## Quick Note
+## Features
+
+- Quick durability of writes with decoupled read throughput
+- Arbitrary number of read replicas supported
+- Designed to serve global low latency reads without sacrificing write performance
+- Remote partition proxying of Get requests
+- (WIP) Atomic mutation batches
+- (WIP) Conditional (If) statements checked at mutation time
+- Support for arbitrary number of regions with varying latencies without impacting write or read performance
+
+## Quick Notes
+
+This Readme is still a WIP, and so is this project. If you see any areas of improvement please open an issue!
 
 Redpanda and Kafka are used pretty interchangeably here. They mean the same thing, and any differences (e.g. configuration properties) will be noted.
 
@@ -48,21 +63,15 @@ Redpanda and Kafka are used pretty interchangeably here. They mean the same thin
 
 The API is HTTP/1.1 & 2 compatible, with all operations as a `POST` request and JSON bodies.
 
+See examples in [records.http](api/records.http)
+
 ### Put Record(s) `POST /records/put`
-
-Can add an `If` condition on it for conditional
-
-Can check for existence with `pk ≠ null`
 
 ### Get Record(s) `POST /records/get`
 
-Get record(s) by their `pk` and `sk` pairs. Multiple records can be fetched at the same time.
-
 ### Delete Record(s) `POST /records/delete`
 
-Delete record(s) by pk and sk, can put an IF condition on it
-
-### List Records `POST /records/list`
+### (WIP) List Records `POST /records/list`
 
 Can have starts_after or ends_before to determine the direction, and prefix
 
@@ -70,7 +79,7 @@ Can specify a pk or a partition number. If pk then sk is the filter. If partitio
 
 Can use IF to filter rows, not on partition number
 
-### Batch Put and Delete Records `POST /records/batch`
+### (WIP) Batch Put and Delete Records `POST /records/batch`
 
 Multiple `Put` and `Delete` operations can be sent in a single request, which will result in all operations being atomic.
 
@@ -99,26 +108,47 @@ rpk topic create firescroll_testns_partitions
 
 The partitions topic is used to record the first found topic count, and allows nodes to check against this count so that they can crash if something changes (because now we don't know where data is). While the actual partitions are checked against in real time, this serves as an extra dummy check in case you change the partition count and update the env vars (since data is not currently re-partitioned). So it's just an extra redundancy check and only ever (intentionally) writes one record, and otherwise is read on node startup.
 
+## Running Locally
 
+To run locally:
+
+```
+bash up.sh
+```
+
+This will start Redpanda and Minio, and set up the topics with the namespace `testns`.
+
+From there go to `http://localhost:9001` and create a key pair in Minio to use with the bucket `testbucket` that was automatically created. 
 
 ## Configuration
 
-All environment variables are imported and validated in files called `env.go`. They exist in the various packages based on scope. You can also visit the test files to see what needs to be specified.
+For all options, see [env.go](utils/env.go). Here are some notable ones:
 
-| Env Var              | Description                                                                                                 | Type              |
-|----------------------|-------------------------------------------------------------------------------------------------------------|-------------------|
-| `NAMESPACE`          | global, should be the same for all regions                                                                  | string            |
-| `REPLICA_GROUP`      | per replica in a region                                                                                     | string            |
-| `INSTANCE_ID`        | unique to the node                                                                                          | string            |
-| `TOPIC_RETENTION_MS` | configured in Kafka, but Firescroll needs to know for backup management!                                    | int               |
-| `PARTITIONS`         | default 256, but must be the same as Kafka, and cannot change!                                              | int (optional)    |
-| `PEERS`              | CSV of (domain/ip):port for gossip peers. If omitted then GET request for other partitions will be ignored. | string (optional) |
+| Env Var                 | Description                                                                                                                                             | Type              |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------|
+| `NAMESPACE`             | global, should be the same for all regions                                                                                                              | string            |
+| `REPLICA_GROUP`         | per replica in a region                                                                                                                                 | string            |
+| `INSTANCE_ID`           | unique to the node                                                                                                                                      | string            |
+| `TOPIC_RETENTION_MS`    | configured in Kafka, but Firescroll needs to know for backup management! (WIP for warnings)                                                             | int               |
+| `PARTITIONS`            | do not change this once you start consuming mutations. Firescroll will do it's best to refuse to work if it detects a change so data is not lost        | int               |
+| `GOSSIP_PEERS`          | CSV of (domain/ip):port for gossip peers. If omitted then GET request for other partitions will be ignored.                                             | string (optional) |
+| `GOSSIP_BROADCAST_MS`   | How frquently to broadcast gossip messages. Default `500`.                                                                                              | int               |
+| `KAFKA_SEEDS`           | CSV of (domain/ip):port for the Kafka node seeds.                                                                                                       | string            |
+| `ADVERTISE_ADDR`        | The address to advertise to gossip peers                                                                                                                | string            |
+| `BACKUP`                | Whether to enable backups. Should choose at most 1 replica group per region. Should be same for all nodes in replica group. Set to `1` to enable.       | int               |
+| `S3_RESTORE`            | Whether to restore from S3 backups. Set to `1` to enable.                                                                                               | int               |
+| `AWS_ACCESS_KEY_ID`     | For S3                                                                                                                                                  | string            |
+| `AWS_SECRET_ACCESS_KEY` | For S3                                                                                                                                                  | string            |
+| `AWS_REGION`            | For S3. Use `us-east-1` for local Minio                                                                                                                 | string            |
+| `S3_ENDPOINT`           | The HTTP endpoint for S3. Like `https://s3.us-east-1.amazonaws.com` or `https://ny3.digitaloceanspace.com`. If `http://` SSL is automatically disabled. | string            |
+| `BACKUP_INTERVAL_SEC`   | How long in seconds between backups. Default 12 hours.                                                                                                  | int               |
+| `DB_PATH`               | Where to store Badger DB files. Default `/var/firescroll/dbs`                                                                                           | string            |
 
+You can also see example values used for local development in [.env.local](.env.local), and overrides for a second node in [Taskfile.yaml](Taskfile.yaml).
 
+## (WIP) The `If` statement
 
-## The `If` statement
-
-`Put` and `Delete` can all take an optional `If` condition that will determine whether the operation is applied at the time that a node consumes the mutation.
+`Put` and `Delete` can all take an optional `If` condition that will determine whether the operation is applied at the time that a node consumes the mutation. If in a batch, then any failing If statement will revoke the whole batch.
 
 The `If` condition must evaluate to a boolean (`true` or `false`), and is in [expr syntax](https://github.com/antonmedv/expr).
 
@@ -130,6 +160,8 @@ The available top-level keys are:
 5. `_updated_at` - an internal coluimn that is updated any time the record is updated, in unix ms. This is the time that the log received the mutation.
 
 If an `If` statement exists, the row will be loaded into the query engine.
+
+The best way to check for whether a mutation applied is to have some random ID that you update for every put, and poll the lowest latency region to check if that change is applied. For deletes you can obviously check for the absence of the record.
 
 ### Examples:
 
@@ -145,20 +177,22 @@ This checks that the primary key does not already exist.
 
 _Note: `null` and `nil` can be used interchangeably_
 
-## Scaling read throughput
+## Scaling the cluster
 
 Nodes are always members of a single replica group, but may contain multiple partitions. The partition mapping is managed by the log (Redpanda/Kafka), but you determine the replica group on boot with the `REPLICA_GROUP={replica group name}` env var.
 
-Each replica group will have a single copy of a partition.
+Each replica group will have a single copy of all partitions.
 
-More details are available in [this section](#mapping-log-topic-partitions-to-nodes).
+More details are available in [this section](#topic-management).
 
-You can scale a region in one of three ways:
+You can scale in multiple ways, depending on what dimension is the bottleneck:
 
 1. Scaling the number of nodes within a replica group
 2. Scaling the number of replica groups
 3. Scaling resources for the nodes
 4. Scaling the log
+
+The suggested order of operations is to first create replicas (benefit of HA), then scale the nodes up, then create more nodes to spread out partitions. If your workload only ever reads from a single parititon at a time, you can look to add more nodes before scaling nodes up.
 
 ### Scaling the replica group
 
@@ -166,13 +200,15 @@ My increasing the number of nodes in a replica group, you spread out the partiti
 
 Simply increase the number of nodes with the same `REPLICA_GROUP` env var to scale up, or decrease to scale down. The cluster will automatically adjust and rebalance.
 
-Note: Scaling down with only a single replica group will result in temporary downtime for the partitions that were on the terminated node.
+Note: Scaling down with only a single replica group will result in temporary downtime for the partitions that were on the terminated node. Having multiple replicas avoids unavailablity.
 
 ### Scaling the number of replica groups
 
 Within the same region, you can also add replica groups to increase the number of replicas for partitions. By addition an addition replica group, you are adding a copy of all partitions for the namespace.
 
 This becomes a second method for scaling read performance in the cluster, as adding more replicas means more read throughput. `READ` and `LIST` operations will be routed randomly to a known replica of a partition, so scaling the replicas provides linear scaling of read throughput.
+
+It also increases the availability of the cluster as any replica of a partition can serve a read.
 
 ### Scaling resources for the nodes
 
@@ -182,19 +218,13 @@ Nodes will utilize all resources for read performance, so more cores and memory 
 
 If you saturate the resources of the log (Redpanda/Kafka) cluster, you may need to scale up those nodes as well. Monitor the network traffic and CPU usage to determine this.
 
-## Scaling writes throughput (the log)
-
-You can increase write performance by giving your log cluster more resources. Monitor network and CPU usage to determine when this is right for you.
-
-All writes will pass through the log cluster.
-
 ## Topic Management
 
-> ⚠️ **DO NOT TOUCH ANY TOPICS WITH THE PREFIX `firescroll_`**
+> ⚠️ **DO NOT MODIFY ANY TOPICS WITH THE PREFIX `firescroll_`**
 > 
 > This will break the namespace if you do not know **exactly** what you are doing.
 
-When a namespace is created, 2 topic within Redpanda are created: `firescroll_{namespace}_mutations` and `firescroll_{namespace}_partitions`.
+When a namespace is created, 2 topic within Kafka are created: `firescroll_{namespace}_mutations` and `firescroll_{namespace}_partitions`.
 
 ### Mutations
 
@@ -211,13 +241,9 @@ Since the number of partitions cannot be changed, by default it is a high value 
 
 ## Backups and Snapshotting
 
-Nodes will elect a single instance of a replica within a region to manage backups for a partition. Backups are made using litestream.io, and sent to an S3 compatible storage.
+Backups are also used as snapshots for partition-shuffling. When a partition is remapped to another node (either via scaling or recovery), the node will first restore the partition from a remote S3 backup. It will then reset the partition checkpoint to the time of the backup, and consume the log from there. This results in a faster recovery, and the topic can expire records over time, preventing unbound log growth.
 
-Backups are also used as snapshots for partition-shuffling. When a partition is remapped to another node (either via scaling or recovery), the node will first restore the partition from the litestream backup. It will then reset the partition checkpoint to the time of the backup, and consume the log from there. This results in a faster recovery, and the topic can expire records over time, preventing unbound log growth.
-
-Backups can be explicitly enabled with `BACKUP=true` env var. Backups should be enabled at the replica-group level, and all nodes within the same replica group should have the same `BACKUP` value. Backups are named via the `REPLICA_GROUP` env var, so distinct regions should use distinct buckets if you plan on having multiple backup replica groups.
-
-According to litestream [colliding backups will not corrupt, but are also just a bad idea.](https://litestream.io/how-it-works/#:~:text=This%20approach%20also%20has%20the%20benefit%20that%20two%20servers%20that%20accidentally%20share%20the%20same%20replica%20destination%20will%20not%20overwrite%20each%20other%E2%80%99s%20data.%20However%2C%20note%20that%20it%20is%20not%20recommended%20to%20replicate%20two%20databases%20to%20the%20same%20exact%20replica%20path.)
+Backups can be explicitly enabled with `BACKUP=true` env var. Backups should be enabled at the replica-group level, and all nodes within the same replica group should have the same `BACKUP` value. Backups are named via the partition, so distinct regions should use distinct buckets if you plan on having multiple backup replica groups.
 
 This allows for multiple backup strategies such as:
 
@@ -226,63 +252,35 @@ This allows for multiple backup strategies such as:
 
 You should choose a strategy depending on your needs.
 
+There are multiple env vars to use for this functionality such as:
+```
+BACKUP_INTERVAL_SEC
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+S3_ENDPOINT
+BACKUP
+AWS_REGION
+S3_BUCKET
+BACKUP_TIMEOUT_SEC
+S3_RESTORE
+```
+
 ## Recommended Redpanda/Kafka Settings
 
 Make sure that the `group_max_session_timeout_ms` and `group_min_session_timeout_ms` range in Redpanda (Kafka uses `.` instead of `_`) allows for your `KAFKA_SESSION_MS` env var value (default `60000`). Redpanda uses a `30000` max so it will need to be adjusted.
 
-TODO
-
-Set session timeout high enough for restart of nodes.
-
 ## Architecture
 
-TL,DR: Firescroll is different by delegating the distributed nature to the log, and playing dumb about materializing the log to snapshots. It them provides a nice API for conditional querying.
+See my blog post here for a more detailed look at the architecture. (LINK BLOG POST).
 
-Even more TL,DR: it's a fancy wrapper around a log for fanning-out reads.
+Briefly, this database turns the traditional DB inside-out: Rather than having multiple nodes with each their own WAL, a distributed central WAL cluster is used (Kafka/Redpanda) and nodes consume from that, materializing (truncating) to disk and backing that snapshot of the log to S3 so that they can be restored on other nodes (during partition remapping) without needing to consume the entire WAL history (this is specifically important for allowing us to have a really short retention period on the WAL!)
 
-By centralizing the writes to a single log cluster we can ensure low-latency durability of mutations, while downstream nodes pull those mutations at their own pace.
+This allows us to decouple reads and writes, meaning that nodes in different regions can consume at their own pace. For example the latencies of servers in Japan do not affect the write performance of servers in North Virginia. This also removes the issue found in Cassandra of the possibility of entering a permanently inconsistent state between replicas of partitions, requiring repairs. It also means that nodes are not responsible for coordinating replication, meaning they can focus on serving reads fast.
 
-Like other eventually consistent databases, this means that read-after-write is not guaranteed is determined by how quickly the mutation is propagated. This use case is acceptable for most KV requirements like serving configurations (DNS records, feature flags, etc.)
+It uses Kafka or Redpanda as the distributed WAL (prefer Redpanda), and Badger as the local KV db. A single node can easily serve reads in the hundreds of thousands per second.
 
-Firescroll optimizes for low-latency high-throughput reads from all points of presence, with the worst case performance being one network hop in the local cluster to serve the read.
+This arch also enables arbitrary number of read replicas for increased performance, or adding more nodes to spread out the partitions.
 
-We are effectively decoupling the local WAL and the compaction to pages as would be found in a traditional DB.
+It's also extremely easy to manage. By having a 2-tier architecture (Kafka -> Nodes) there is no complex cascading replication.
 
-This also means that no caching is needed, since updates are propagated down to the nodes as fast as they can be consumed.
-
-### Storage engine
-
-SQLite is used as the underlying storage engine. Each partition is a single SQLite database.
-
-Continuous incremental snapshots are covered in the [Backups and Snapshotting section](#backups-and-snapshotting), and used for both disaster recovery and partition remapping.
-
-### Tables
-
-2 tables are created:
-
-1. For storing the materialized mutation log (where your data is stored): `log_data`
-2. For keeping track of the latest value from Kafka (using the Kafka write timestamp): `offsets`
-
-### Gossip
-
-Gossip is used within a local region to
-
-### Mapping log topic partitions to nodes
-
-In log terms, nodes always belong to a single topic and a single consumer group.
-
-A single node could (and most likely will) be responsible for multiple partitions of a topic. This is determined by strategy used by the log cluster. Nodes simply react to the partitions they are mapped to, and respond accordingly.
-
-When a node is unmapped from a partition, it will first stop the backup process (to ensure no in-progress backups are lost). It will then delete the local DB from disk and reclaim the space. It is important to ensure that at least one replica group performs backups, or data will be permanently lost once the retention period of the topic is passed.
-
-### Partition initialization process
-
-When a partition is initialized (node starting) it follows this order:
-
-1. Will use the local DB if it exists and has a timestamp >= snapshot timestamp. Continue consuming log from latest mutation in local DB.
-2. Will use the snapshot in S3 if it is newer than local DB or local DB does not exist. Continue consuming log from latest mutation in snapshot.
-3. Will start consuming from Kafka, and throw warning log that it is creating a local DB.
-
-## Performance and Benchmarking
-
-TODO
+Backups to S3 are also used to aid in partition remapping and bringing new replicas online, allowing the Kafka log to be keep a low retention without losing data.
