@@ -91,6 +91,11 @@ If any condition fails, then all operations will be aborted
 
 ## Quick Start (running locally)
 
+Need:
+1. Go
+2. [Taskfile](https://taskfile.dev/)
+3. Docker
+
 To run locally:
 
 ```
@@ -105,7 +110,17 @@ Take the keys for Minio, and copy the `.env.local` file to `.env`, replacing my 
 
 You can then use [`task`](https://taskfile.dev/) to run the first node. This will initially grab all partitions. You can make mutations inside of [records.http](api/records.http) to see mutations being written to the node's disk.
 
-You can then run `task 2` to bring up another node and watch as the partitions get rebalanced, and the new node restores from S3. If you make more get requests you will see in the logs that they are proxied to the other respective partition!
+You can then run `task 2` to bring up another node and watch as the partitions get rebalanced, and the new node restores from S3. If you make more get requests you will see in the logs that they are proxied to the other partition!
+
+### Cleanup
+
+Delete the `dbs` and `dbs2` folder, and run:
+
+```
+bash down.sh
+```
+
+to clean up the docker compose volumes.
 
 ## Setup
 
