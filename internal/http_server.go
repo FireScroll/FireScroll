@@ -2,8 +2,8 @@ package internal
 
 import (
 	"fmt"
-	"github.com/danthegoodman1/Firescroll/gologger"
-	"github.com/danthegoodman1/Firescroll/utils"
+	"github.com/danthegoodman1/FireScroll/gologger"
+	"github.com/danthegoodman1/FireScroll/utils"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"net/http"

@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/danthegoodman1/Firescroll/api"
-	"github.com/danthegoodman1/Firescroll/gologger"
-	"github.com/danthegoodman1/Firescroll/gossip"
-	"github.com/danthegoodman1/Firescroll/internal"
-	"github.com/danthegoodman1/Firescroll/log_consumer"
-	"github.com/danthegoodman1/Firescroll/partitions"
-	"github.com/danthegoodman1/Firescroll/utils"
+	"github.com/danthegoodman1/FireScroll/api"
+	"github.com/danthegoodman1/FireScroll/gologger"
+	"github.com/danthegoodman1/FireScroll/gossip"
+	"github.com/danthegoodman1/FireScroll/internal"
+	"github.com/danthegoodman1/FireScroll/log_consumer"
+	"github.com/danthegoodman1/FireScroll/partitions"
+	"github.com/danthegoodman1/FireScroll/utils"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
@@ -22,7 +22,7 @@ var (
 )
 
 func main() {
-	logger.Info().Msg("starting Firescroll")
+	logger.Info().Msg("starting FireScroll")
 	g := errgroup.Group{}
 	g.Go(func() error {
 		logger.Debug().Msg("starting internal server")

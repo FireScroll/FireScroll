@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/danthegoodman1/Firescroll/utils"
+	"github.com/danthegoodman1/FireScroll/utils"
 	"github.com/dgraph-io/badger/v4"
 	_ "github.com/mattn/go-sqlite3"
 	"os"

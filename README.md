@@ -1,4 +1,4 @@
-# Firescroll 
+# FireScroll 
 
 An unkillable distributed KV database with unlimited read throughput. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
 
@@ -12,8 +12,10 @@ Useful for low-latency cases that can tolerate short cache-like behavior such as
 - CDN configs
 - and many more!
 
+FireScroll tackles a very specific use-case, and is meant to be used in addition to a traditional OLTP DB like CockroachDB or Scylla.
+
 <!-- TOC -->
-* [Firescroll](#firescroll-)
+* [FireScroll](#firescroll-)
   * [Features](#features)
   * [Quick Notes](#quick-notes)
   * [API](#api)
@@ -131,8 +133,8 @@ For all options, see [env.go](utils/env.go). Here are some notable ones:
 | `NAMESPACE`             | global, should be the same for all regions                                                                                                              | string            |
 | `REPLICA_GROUP`         | per replica in a region, maps to a Kafka consumer group. A replica group should only exist in one region, never spanning regions.                       | string            |
 | `INSTANCE_ID`           | unique to the node                                                                                                                                      | string            |
-| `TOPIC_RETENTION_MS`    | configured in Kafka, but Firescroll needs to know for backup management! (WIP for warnings)                                                             | int               |
-| `PARTITIONS`            | do not change this once you start consuming mutations. Firescroll will do it's best to refuse to work if it detects a change so data is not lost        | int               |
+| `TOPIC_RETENTION_MS`    | configured in Kafka, but FireScroll needs to know for backup management! (WIP for warnings)                                                             | int               |
+| `PARTITIONS`            | do not change this once you start consuming mutations. FireScroll will do it's best to refuse to work if it detects a change so data is not lost        | int               |
 | `GOSSIP_PEERS`          | CSV of (domain/ip):port for gossip peers. If omitted then GET request for other partitions will be ignored.                                             | string (optional) |
 | `GOSSIP_BROADCAST_MS`   | How frquently to broadcast gossip messages. Default `500`.                                                                                              | int               |
 | `KAFKA_SEEDS`           | CSV of (domain/ip):port for the Kafka node seeds.                                                                                                       | string            |

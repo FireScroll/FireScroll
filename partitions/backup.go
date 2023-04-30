@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/danthegoodman1/Firescroll/utils"
+	"github.com/danthegoodman1/FireScroll/utils"
 	"golang.org/x/sync/errgroup"
 	"io"
 	"os"

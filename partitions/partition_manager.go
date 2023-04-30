@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/danthegoodman1/Firescroll/gologger"
-	"github.com/danthegoodman1/Firescroll/syncx"
-	"github.com/danthegoodman1/Firescroll/utils"
+	"github.com/danthegoodman1/FireScroll/gologger"
+	"github.com/danthegoodman1/FireScroll/syncx"
+	"github.com/danthegoodman1/FireScroll/utils"
 	"os"
 )
 
