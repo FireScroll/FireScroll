@@ -91,12 +91,21 @@ If any condition fails, then all operations will be aborted
 
 ## Quick Start (running locally)
 
+### Docker compose:
+
+```
+docker compose up -d
+bash setup.sh
+```
+
+Then get and replace minio keys.
+
+### Or build locally:
+
 Need:
 1. Go
 2. [Taskfile](https://taskfile.dev/)
 3. Docker
-
-[docker compose WIP](https://github.com/danthegoodman1/FireScroll/issues/26)
 
 To run locally:
 

@@ -8,8 +8,6 @@ volumes:
   redpanda-1: null
   redpanda-2: null
   minio_storage: null
-  dbs1: null
-  dbs2: null
 services:
   redpanda-0:
     command:
@@ -141,8 +139,6 @@ services:
       MINIO_ROOT_PASSWORD: password
     command: server --console-address ":9001" /data
     container_name: minio
-    networks:
-      - redpanda_network
   createbuckets:
     image: minio/mc
     depends_on:
@@ -153,79 +149,3 @@ services:
       /usr/bin/mc mb myminio/testbucket;
       exit 0;
       "
-    networks:
-      - redpanda_network
-  firescroll-1:
-    container_name: firescroll-1
-    build: .
-    volumes:
-      - dbs1:/var/firescroll/dbs
-    environment:
-      DEBUG: 1
-      PRETTY: 1
-      NAMESPACE: testns
-      REPLICA_GROUP: testrg
-      INSTANCE_ID: firescroll-1
-      PARTITIONS: 2
-      TOPIC_RETENTION_MS: 10080000
-      DB_PATH: "./dbs"
-      KAFKA_SESSION_MS: 7000
-      GC_INTERVAL_MS: 7000
-      BACKUP_INTERVAL_SEC: 5
-      AWS_ACCESS_KEY_ID: ZSRTxRDM5S9KuSdj
-      AWS_SECRET_ACCESS_KEY: uQpU9msGmoJWcrot5lpLcYRFk4R86Pg3
-      S3_ENDPOINT: http://minio:9000
-      BACKUP: 1
-      AWS_REGION: us-east-1
-      S3_BUCKET: testbucket
-      BACKUP_TIMEOUT_SEC: 5
-      KAFKA_SEEDS: "redpanda-0:9092,redpanda-1:9092,redpanda-2:9092"
-      S3_RESTORE: 1
-      ADVERTISE_ADDR: firescroll-1:8190
-      GOSSIP_BROADCAST_MS: 1000
-    networks:
-      - redpanda_network
-    depends_on:
-      - minio
-      - redpanda-0
-      - redpanda-1
-      - redpanda-2
-    ports:
-      - "8190:8190"
-  firescroll-2:
-    container_name: firescroll-2
-    build: .
-    volumes:
-      - dbs2:/var/firescroll/dbs
-    environment:
-      DEBUG: 1
-      PRETTY: 1
-      NAMESPACE: testns
-      REPLICA_GROUP: testrg
-      INSTANCE_ID: firescroll-2
-      PARTITIONS: 2
-      TOPIC_RETENTION_MS: 10080000
-      DB_PATH: "./dbs"
-      KAFKA_SESSION_MS: 7000
-      GC_INTERVAL_MS: 7000
-      BACKUP_INTERVAL_SEC: 5
-      AWS_ACCESS_KEY_ID: ZSRTxRDM5S9KuSdj # REPLACE ME
-      AWS_SECRET_ACCESS_KEY: uQpU9msGmoJWcrot5lpLcYRFk4R86Pg3 # REPLACE ME
-      S3_ENDPOINT: http://minio:9000
-      BACKUP: 1
-      AWS_REGION: us-east-1
-      S3_BUCKET: testbucket
-      BACKUP_TIMEOUT_SEC: 5
-      KAFKA_SEEDS: "redpanda-0:9092,redpanda-1:9092,redpanda-2:9092"
-      S3_RESTORE: 1
-      ADVERTISE_ADDR: firescroll-2:8190
-      GOSSIP_BROADCAST_MS: 1000
-      GOSSIP_PEERS: firescroll-1:8192
-    networks:
-      - redpanda_network
-    depends_on:
-      - minio
-      - redpanda-0
-      - redpanda-1
-      - redpanda-2
-      - firescroll-1
