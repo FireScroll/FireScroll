@@ -57,6 +57,8 @@ Useful for low-latency cases that can tolerate short cache-like behavior such as
 
 This Readme is still a WIP, and so is this project. If you see any areas of improvement please open an issue!
 
+I would not call this "production ready" in the traditional sense, as it lacks extensive automated testing.
+
 Redpanda and Kafka are used pretty interchangeably here. They mean the same thing, and any differences (e.g. configuration properties) will be noted.
 
 ## API

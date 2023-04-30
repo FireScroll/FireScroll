@@ -1,16 +1,18 @@
-To keep the license simple:
+To keep the License simple:
 
 Section 1: You may (not intended to be comprehensive):
-- Use this for personal projects
-- Use this within your company to power other products that are not directly exposing Firescroll as the functionality (e.g. offering a distributed KV store backed by Firescroll)
-- Use this in commercial and non commercial settings
-- Fork, clone, modify, and contribute!
+a. Use this for personal projects
+b. Use this within your company to power other products that are not directly exposing Firescroll as the functionality (e.g. offering a distributed KV store backed by Firescroll)
+c. Use this in commercial and non commercial settings
+d. Fork, clone, modify, and contribute!
 
 Section 2: You may NOT (not comprehensive):
-- Sell hosted Firescroll
-- Sell a thin layer over Firescroll (e.g. offering a distributed KV store backed by Firescroll)
-- Clone Firescroll without keeping open source and openly referencing Firescroll as the parent
+a. Sell hosted Firescroll
+b. Sell a thin layer over Firescroll (e.g. offering a distributed KV store backed by Firescroll)
+c. Clone Firescroll without keeping open source and openly referencing Firescroll as the parent
 
 Omission from section 2 is not express or implicit permission. Use common sense. If you are unsure, please reach out! Section 1 is also not comprehensive, there are likely more instances where Firescroll would be well used.
 
 Use common sense to determine if your use case is considered permitted and/or ethical!
+
+The maintainers of Firescroll reserve all rights to modify the License.
