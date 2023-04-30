@@ -101,9 +101,9 @@ This will start Redpanda and Minio, and set up the topics with the namespace `te
 
 From there go to `http://localhost:9001` and create a key pair in Minio to use with the bucket `testbucket` that was automatically created.
 
-Get some keys for minio, and copy the `.env.local` file to `.env`, replacing my local dev keys.
+Take the keys for Minio, and copy the `.env.local` file to `.env`, replacing my local dev keys.
 
-You can then use [`task`](https://taskfile.dev/) to run the first node. This will initially grab all partitions. You can make mutations inside of [records.http](api/records.http) to see them work.
+You can then use [`task`](https://taskfile.dev/) to run the first node. This will initially grab all partitions. You can make mutations inside of [records.http](api/records.http) to see mutations being written to the node's disk.
 
 You can then run `task 2` to bring up another node and watch as the partitions get rebalanced, and the new node restores from S3. If you make more get requests you will see in the logs that they are proxied to the other respective partition!
 
