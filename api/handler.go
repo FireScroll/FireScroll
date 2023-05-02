@@ -50,6 +50,14 @@ func (s *HTTPServer) handleMutation(c echo.Context) error {
 	for _, mut := range reqBody.Records {
 		mut.TsMs = nMS
 		mut.Mutation = partitions.Operation(c.Param("op"))
+		// If we have an `if`, verify it works
+		if mut.If != nil {
+			err := partitions.VerifyIfStatement(*mut.If)
+			if err != nil {
+				return c.String(http.StatusBadRequest, fmt.Sprintf("error compiling `if` statement `%s`: %s", *mut.If, err))
+			}
+			logger.Info().Msg("GOOD IF CONDITION")
+		}
 		jsonB, err := json.Marshal(mut)
 		if err != nil {
 			logger.Fatal().Err(err).Msg("error marshalling json, exiting")

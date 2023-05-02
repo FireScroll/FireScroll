@@ -236,15 +236,15 @@ func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error {
 	switch mutation.Mutation {
 	case OperationPut:
-		return p.handlePut(mutation.Pk, mutation.Sk, *mutation.Data, offset, mutation.TsMs)
+		return p.handlePut(mutation.Pk, mutation.Sk, mutation.If, mutation.Data, offset, mutation.TsMs)
 	case OperationDelete:
-		return p.handleDelete(mutation.Pk, mutation.Sk, offset)
+		return p.handleDelete(mutation.Pk, mutation.Sk, mutation.If, offset)
 	default:
 		return ErrUnknownOperation
 	}
 }
 
-func (p *Partition) handlePut(pk, sk string, data map[string]any, offset, tsMs int64) error {
+func (p *Partition) handlePut(pk, sk string, ifStmt *string, data map[string]any, offset, tsMs int64) error {
 	// TODO: remove log line
 	logger.Debug().Msg("handling put")
 	key := formatRecordKey(pk, sk)
@@ -269,11 +269,21 @@ func (p *Partition) handlePut(pk, sk string, data map[string]any, offset, tsMs i
 			}
 			stored.UpdatedAt = n
 		}
-		stored.Data = data
 
-		err = txn.Set(key, stored.MustSerialize())
-		if err != nil {
-			return fmt.Errorf("error setting record: %w", err)
+		shouldUpdate := true
+		if ifStmt != nil {
+			shouldUpdate, err = CompareIfStatement(*ifStmt, stored.ToCompareRecord(pk, sk))
+			if err != nil {
+				return fmt.Errorf("error in CompareIfStatement: %w", err)
+			}
+		}
+
+		if shouldUpdate {
+			stored.Data = data
+			err = txn.Set(key, stored.MustSerialize())
+			if err != nil {
+				return fmt.Errorf("error setting record: %w", err)
+			}
 		}
 
 		return p.updateOffsetInTx(txn, offset)
@@ -292,13 +302,42 @@ func (p *Partition) updateOffsetInTx(txn *badger.Txn, offset int64) error {
 	return nil
 }
 
-func (p *Partition) handleDelete(pk, sk string, offset int64) error {
+func (p *Partition) handleDelete(pk, sk string, ifStmt *string, offset int64) error {
 	// TODO: remove log line
 	logger.Debug().Msg("handling delete")
+	key := formatRecordKey(pk, sk)
 	return p.DB.Update(func(txn *badger.Txn) error {
-		err := txn.Delete(formatRecordKey(pk, sk))
-		if err != nil {
-			return fmt.Errorf("error deleting record: %w", err)
+		shouldDelete := true
+		if ifStmt != nil {
+			var stored StoredRecord
+			item, err := txn.Get(key)
+			if errors.Is(err, badger.ErrKeyNotFound) {
+				// we didn't even have it
+				return nil
+			} else if err != nil {
+				return fmt.Errorf("error in txn.Get: %w", err)
+			} else {
+				b, err := item.ValueCopy(nil)
+				if err != nil {
+					return fmt.Errorf("error in item.ValueCopy: %w", err)
+				}
+
+				err = json.Unmarshal(b, &stored)
+				if err != nil {
+					return fmt.Errorf("error in json.Unmarshal: %w", err)
+				}
+			}
+			shouldDelete, err = CompareIfStatement(*ifStmt, stored.ToCompareRecord(pk, sk))
+			if err != nil {
+				return fmt.Errorf("error in CompareIfStatement: %w", err)
+			}
+		}
+
+		if shouldDelete {
+			err := txn.Delete(formatRecordKey(pk, sk))
+			if err != nil {
+				return fmt.Errorf("error deleting record: %w", err)
+			}
 		}
 
 		return p.updateOffsetInTx(txn, offset)

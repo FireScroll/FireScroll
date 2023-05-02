@@ -182,7 +182,7 @@ For all options, see [env.go](utils/env.go). Here are some notable ones:
 
 You can also see example values used for local development in [.env.local](.env.local), and overrides for a second node in [Taskfile.yaml](Taskfile.yaml).
 
-## (WIP) The `If` statement
+## The `If` statement
 
 `Put` and `Delete` can all take an optional `If` condition that will determine whether the operation is applied at the time that a node consumes the mutation. If in a batch, then any failing If statement will revoke the whole batch.
 

@@ -35,6 +35,16 @@ func (sr StoredRecord) MustSerialize() []byte {
 	return b
 }
 
+func (sr StoredRecord) ToCompareRecord(pk, sk string) compareRecord {
+	return map[string]any{
+		"pk":          pk,
+		"sk":          sk,
+		"data":        sr.Data,
+		"_created_at": sr.CreatedAt.UnixMilli(),
+		"_updated_at": sr.UpdatedAt.UnixMilli(),
+	}
+}
+
 type Record struct {
 	Pk   string
 	Sk   string
@@ -67,11 +77,12 @@ func (r Record) WithErr(err error) RecordWithError {
 }
 
 type RecordMutation struct {
-	Pk       string `validate:"require"`
-	Sk       string `validate:"require"`
-	Data     *map[string]any
-	TsMs     int64
-	Mutation Operation
+	Pk       string         `validate:"require" json:"pk"`
+	Sk       string         `validate:"require" json:"sk"`
+	Data     map[string]any `json:"data"`
+	TsMs     int64          `json:"ts_ms"`
+	Mutation Operation      `json:"mutation"`
+	If       *string        `json:"if"`
 }
 
 type RecordWithError struct {
