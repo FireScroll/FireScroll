@@ -25,13 +25,16 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
     * [(WIP) List Records `POST /records/list`](#wip-list-records-post-recordslist)
     * [(WIP) Batch Put and Delete Records `POST /records/batch`](#wip-batch-put-and-delete-records-post-recordsbatch)
   * [Quick Start (running locally)](#quick-start-running-locally)
+    * [Docker compose:](#docker-compose)
+    * [Or build locally:](#or-build-locally)
+    * [Cleanup](#cleanup)
   * [Setup](#setup)
     * [Mutations Topic](#mutations-topic)
     * [Partitions Topic](#partitions-topic)
   * [Configuration](#configuration)
-  * [(WIP) The `If` statement](#wip-the-if-statement)
-    * [Examples:](#examples)
-      * [Check existence of a record](#check-existence-of-a-record)
+  * [The `if` statement](#the-if-statement)
+    * [Checking whether a mutation applied](#checking-whether-a-mutation-applied)
+    * [Examples](#examples)
   * [Scaling the cluster](#scaling-the-cluster)
     * [Scaling the replica group](#scaling-the-replica-group)
     * [Scaling the number of replica groups](#scaling-the-number-of-replica-groups)
@@ -51,9 +54,9 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
 - Arbitrary number of read replicas supported
 - Designed to serve global low latency reads without sacrificing write performance
 - Remote partition proxying of Get requests
-- (WIP) Atomic mutation batches
-- (WIP) Conditional (If) statements checked at mutation time
+- Conditional (If) statements checked at mutation time
 - Support for arbitrary number of regions with varying latencies without impacting write or read performance
+- (WIP) Atomic mutation batches
 
 ## Quick Notes
 
