@@ -182,34 +182,31 @@ For all options, see [env.go](utils/env.go). Here are some notable ones:
 
 You can also see example values used for local development in [.env.local](.env.local), and overrides for a second node in [Taskfile.yaml](Taskfile.yaml).
 
-## (WIP) The `If` statement
+## The `if` statement
 
-`Put` and `Delete` can all take an optional `If` condition that will determine whether the operation is applied at the time that a node consumes the mutation. If in a batch, then any failing If statement will revoke the whole batch.
+`Put` and `Delete` can all take an optional `if` condition that will determine whether the operation is applied at the time that a node consumes the mutation. If in a batch, then any failing If statement will revoke the whole batch.
 
-The `If` condition must evaluate to a boolean (`true` or `false`), and is in [expr syntax](https://github.com/antonmedv/expr).
+The `if` condition must evaluate to a boolean (`true` or `false`), and is in [expr syntax](https://github.com/antonmedv/expr).
+
 
 The available top-level keys are:
 1. `pk`
 2. `sk`
 3. `data` (the top level JSON object, e.g. `{"key": "val"}` could be checked like `data.key == "val"`)
 4. `_created_at` - an internal column created when the record is first inserted, in unix ms. This is the time that the log received the mutation.
-5. `_updated_at` - an internal coluimn that is updated any time the record is updated, in unix ms. This is the time that the log received the mutation.
+5. `_updated_at` - an internal column that is updated any time the record is updated, in unix ms. This is the time that the log received the mutation.
 
 If an `If` statement exists, the row will be loaded into the query engine.
 
+There is a performance penalty to using the `if` statement, btu it's on the order of hundreds of microseconds per record.
+
+### Checking whether a mutation applied
+
 The best way to check for whether a mutation applied is to have some random ID that you update for every put, and poll the lowest latency region to check if that change is applied. For deletes you can obviously check for the absence of the record.
 
-### Examples:
+### Examples
 
-#### Check existence of a record
-
-If you only want to `Put` if a record does not already exist, then you can use the `If` query:
-
-```expr
-pk == null
-```
-
-This checks that the primary key does not already exist.
+See examples in [records.http](api/records.http)
 
 _Note: `null` and `nil` can be used interchangeably_
 

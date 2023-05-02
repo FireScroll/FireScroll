@@ -1,0 +1,1348 @@
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172426.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 144
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data == null"
+    }
+  ]
+}
+
+<> 2023-05-02T172423.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172417.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 212
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      }
+    }
+  ]
+}
+
+<> 2023-05-02T172416.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172409.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 144
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data == null"
+    }
+  ]
+}
+
+<> 2023-05-02T172406.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172355.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 144
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data == null"
+    }
+  ]
+}
+
+<> 2023-05-02T172351.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172256.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 142
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "pk == null"
+    }
+  ]
+}
+
+<> 2023-05-02T172250.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172247.200.json
+
+###
+
+POST http://localhost:8190/records/delete
+Content-Type: application/json
+Content-Length: 102
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "if": "_updated_at > 1"
+    }
+  ]
+}
+
+<> 2023-05-02T172245.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172240.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 142
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "pk == null"
+    }
+  ]
+}
+
+<> 2023-05-02T172237.200.txt
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 134
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "pk"
+    }
+  ]
+}
+
+<> 2023-05-02T172223.400.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172213.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 212
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      }
+    }
+  ]
+}
+
+<> 2023-05-02T172212.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T172207.200.json
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171950.200.json
+
+###
+
+POST http://localhost:8190/records/delete
+Content-Type: application/json
+Content-Length: 102
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "if": "_updated_at < 1"
+    }
+  ]
+}
+
+<> 2023-05-02T171947.200.txt
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 212
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      }
+    }
+  ]
+}
+
+<> 2023-05-02T171944.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171935.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 280
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data.hey == \"ho\""
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      },
+      "if": "data.hey == \"ho\""
+    }
+  ]
+}
+
+<> 2023-05-02T171933.200.txt
+
+###
+
+POST http://localhost:8190/records/delete
+Content-Type: application/json
+Content-Length: 102
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "if": "_updated_at > 1"
+    }
+  ]
+}
+
+<> 2023-05-02T171929.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171923.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 212
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      }
+    }
+  ]
+}
+
+<> 2023-05-02T171922.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171920.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 280
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data.hey == \"ho\""
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      },
+      "if": "data.hey == \"ho\""
+    }
+  ]
+}
+
+<> 2023-05-02T171824.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171734.200.json
+
+###
+
+POST http://localhost:8190/records/delete
+Content-Type: application/json
+Content-Length: 102
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "if": "_updated_at > 1"
+    }
+  ]
+}
+
+<> 2023-05-02T171730.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171706.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 280
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data.hey == \"ho\""
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      },
+      "if": "data.hey == \"ho\""
+    }
+  ]
+}
+
+<> 2023-05-02T171704.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171655.200.json
+
+###
+
+POST http://localhost:8190/records/delete
+Content-Type: application/json
+Content-Length: 102
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "if": "_updated_at > 1"
+    }
+  ]
+}
+
+<> 2023-05-02T171648.200.txt
+
+###
+
+POST http://localhost:8190/records/delete
+Content-Type: application/json
+Content-Length: 102
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "if": "_updated_at > 1"
+    }
+  ]
+}
+
+<> 2023-05-02T171512.400.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171436.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 280
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data.hey == \"ho\""
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      },
+      "if": "data.hey == \"ho\""
+    }
+  ]
+}
+
+<> 2023-05-02T171347.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-05-02T171334.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 280
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data.hey == \"ho\""
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      },
+      "if": "data.hey == \"ho\""
+    }
+  ]
+}
+
+<> 2023-05-02T170001.200.txt
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 134
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "pk"
+    }
+  ]
+}
+
+<> 2023-05-02T165945.400.txt
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 137
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "pk[1]"
+    }
+  ]
+}
+
+<> 2023-05-02T165939.400.txt
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 139
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data[1]"
+    }
+  ]
+}
+
+<> 2023-05-02T165929.400.txt
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 139
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data[1]"
+    }
+  ]
+}
+
+<> 2023-05-02T165848.500.json
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-04-30T114450.200.json
+
+###
+
+POST http://localhost:8190/records/put
+Content-Type: application/json
+Content-Length: 212
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      }
+    }
+  ]
+}
+
+<> 2023-04-30T114448.200.txt
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 171
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-04-30T114444.200.json
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 168
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Keys": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-04-29T171020.200.json
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 168
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Keys": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-04-29T171019.200.json
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 168
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Keys": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-04-29T171018.200.json
+
+###
+
+POST http://localhost:8190/records/get
+Content-Type: application/json
+Content-Length: 168
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "Keys": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    },
+    {
+      "pk": "pk2",
+      "sk": "sk2"
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3"
+    }
+  ]
+}
+
+<> 2023-04-29T171017.200.json
+
+###
+

@@ -54,3 +54,76 @@ Content-Type: application/json
     }
   ]
 }
+
+### Put records with if condition (pk1 will update, not pk3)
+POST http://localhost:8190/records/put
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data.hey == \"ho\""
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3",
+      "data": {
+        "lets": "go"
+      },
+      "if": "data.hey == \"ho\""
+    }
+  ]
+}
+
+### Put records with BAD if condition (will fail)
+POST http://localhost:8190/records/put
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "pk"
+    }
+  ]
+}
+
+### Put records only if it doesn't exist
+POST http://localhost:8190/records/put
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data == null"
+    }
+  ]
+}
+
+### Delete records if
+POST http://localhost:8190/records/delete
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "if": "_updated_at > 1"
+    }
+  ]
+}
