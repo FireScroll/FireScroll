@@ -97,6 +97,23 @@ Content-Type: application/json
   ]
 }
 
+### Put records only if it doesn't exist
+POST http://localhost:8190/records/put
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data == null"
+    }
+  ]
+}
+
 ### Delete records if
 POST http://localhost:8190/records/delete
 Content-Type: application/json
