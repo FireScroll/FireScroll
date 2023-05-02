@@ -1,6 +1,6 @@
 # FireScroll 
 
-An unkillable distributed KV database with unlimited read throughput. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
+A highly available multi-region KV database for massive read scalability. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
 
 Perfect for configuration management at scale where you want global low-latency reads without caching or cold first reads.
 
@@ -307,7 +307,7 @@ Make sure that the `group_max_session_timeout_ms` and `group_min_session_timeout
 
 ## Architecture
 
-See my blog post here for a more detailed look at the architecture. (LINK BLOG POST).
+See the [blog post here](https://blog.danthegoodman.com/firescroll--an-unkillable-multi-region-kv-database-that-scales-reads-to-infinity) for a more detailed look at the architecture.
 
 Briefly, this database turns the traditional DB inside-out: Rather than having multiple nodes with each their own WAL, a distributed central WAL cluster is used (Kafka/Redpanda) and nodes consume from that, materializing (truncating) to disk and backing that snapshot of the log to S3 so that they can be restored on other nodes (during partition remapping) without needing to consume the entire WAL history (this is specifically important for allowing us to have a really short retention period on the WAL!)
 
