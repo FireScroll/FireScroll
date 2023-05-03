@@ -21,7 +21,20 @@ Content-Type: application/json
   ]
 }
 
-### Get records
+### Get records (single partition)
+POST http://localhost:8190/records/get
+Content-Type: application/json
+
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1"
+    }
+  ]
+}
+
+### Get records (multiple partitions)
 POST http://localhost:8190/records/get
 Content-Type: application/json
 

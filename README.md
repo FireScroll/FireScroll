@@ -1,6 +1,6 @@
 # FireScroll 
 
-A highly available multi-region KV database for massive read scalability. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
+A highly available multi-region KV database for massive read scalability with a focus on low latency and massive concurrency.  Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
 
 Perfect for configuration management at scale where you want global low-latency reads without caching or cold first reads.
 
@@ -56,6 +56,8 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
 - Remote partition proxying of Get requests
 - Conditional (If) statements checked at mutation time
 - Support for arbitrary number of regions with varying latencies without impacting write or read performance
+- Sub-ms partition reads under nominal load (300-700us for <1KB documents)
+- Extreme concurrency-focused
 - (WIP) Atomic mutation batches
 
 ## Quick Notes
@@ -315,7 +317,7 @@ This allows us to decouple reads and writes, meaning that nodes in different reg
 
 It uses Kafka or Redpanda as the distributed WAL (prefer Redpanda), and Badger as the local KV db. A single node can easily serve reads in the hundreds of thousands per second.
 
-This arch also enables arbitrary number of read replicas for increased performance, or adding more nodes to spread out the partitions.
+This arch also enables arbitrary number of read replicas for increased performance, or adding more nodes to spread out the partitions. While it does enable sub-ms reads (typically 300-700us for <1KB documents), it focuses more on concurrency. Under load, FireScroll will favor concurrency over latency due to the locking techniques employed. Reads are also prioritized over mutations.
 
 It's also extremely easy to manage. By having a 2-tier architecture (Kafka -> Nodes) there is no complex cascading replication.
 
