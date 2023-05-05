@@ -292,7 +292,7 @@ func (p *Partition) handlePut(pk, sk string, ifStmt *string, data map[string]any
 
 		return p.updateOffsetInTx(txn, offset)
 	})
-	if err != nil {
+	if err == nil {
 		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
 			"operation": "put",
 		}).Observe(float64(time.Since(s).Microseconds()))
@@ -353,7 +353,7 @@ func (p *Partition) handleDelete(pk, sk string, ifStmt *string, offset int64) er
 
 		return p.updateOffsetInTx(txn, offset)
 	})
-	if err != nil {
+	if err == nil {
 		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
 			"operation": "delete",
 		}).Observe(float64(time.Since(s).Microseconds()))
