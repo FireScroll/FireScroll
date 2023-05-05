@@ -230,9 +230,16 @@ func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading record from DB: %w", err)
 	}
-	internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
-		"operation": "get",
-	}).Observe(float64(time.Since(s).Microseconds()))
+
+	if len(records) == 0 {
+		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
+			"operation": "get_full_miss",
+		}).Observe(float64(time.Since(s).Microseconds()))
+	} else {
+		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
+			"operation": "get",
+		}).Observe(float64(time.Since(s).Microseconds()))
+	}
 	return records, nil
 }
 
