@@ -29,6 +29,7 @@ var (
 	LastOffsetKey = []byte("last_offset")
 
 	ErrInvalidKey = errors.New("invalid key")
+	ErrTxnNil     = errors.New("txn nil")
 )
 
 const (
@@ -206,6 +207,9 @@ func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 	s := time.Now()
 	err := p.DB.View(func(txn *badger.Txn) error {
 		for _, key := range keys {
+			if txn == nil {
+				return ErrTxnNil
+			}
 			item, err := txn.Get(formatRecordKey(key.Pk, key.Sk))
 			if errors.Is(err, badger.ErrKeyNotFound) {
 				continue
@@ -261,6 +265,9 @@ func (p *Partition) handlePut(pk, sk string, ifStmt *string, data map[string]any
 	s := time.Now()
 	n := time.UnixMilli(tsMs)
 	err := p.DB.Update(func(txn *badger.Txn) error {
+		if txn == nil {
+			return ErrTxnNil
+		}
 		var stored StoredRecord
 		item, err := txn.Get(key)
 		if errors.Is(err, badger.ErrKeyNotFound) {
@@ -325,6 +332,9 @@ func (p *Partition) handleDelete(pk, sk string, ifStmt *string, offset int64) er
 	s := time.Now()
 	key := formatRecordKey(pk, sk)
 	err := p.DB.Update(func(txn *badger.Txn) error {
+		if txn == nil {
+			return ErrTxnNil
+		}
 		shouldDelete := true
 		if ifStmt != nil {
 			var stored StoredRecord

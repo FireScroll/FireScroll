@@ -38,4 +38,6 @@ var (
 	Env_Debug       = os.Getenv("DEBUG") == "1"
 	Env_BadgerDebug = os.Getenv("BADGER_DEBUG") == "1"
 	Env_GossipDebug = os.Getenv("GOSSIP_DEBUG") == "1"
+
+	Env_Profile = os.Getenv("PROFILE") == "1"
 )

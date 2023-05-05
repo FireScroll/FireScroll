@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 )
 
@@ -20,6 +21,13 @@ func StartServer() error {
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+	mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+	mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
 
 	httpServer = &http.Server{
 		Addr:    fmt.Sprintf(":%s", utils.Env_InternalPort),

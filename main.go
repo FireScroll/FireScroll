@@ -12,6 +12,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"os"
 	"os/signal"
+	"runtime"
+	"runtime/pprof"
 	"strings"
 	"syscall"
 	"time"
@@ -23,6 +25,17 @@ var (
 
 func main() {
 	logger.Info().Msg("starting FireScroll")
+	if utils.Env_Profile {
+		logger.Warn().Msg("profiling enabled!")
+		f, err := os.Create("cpu.pprof")
+		if err != nil {
+			panic(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+		runtime.SetMutexProfileFraction(1)
+		runtime.SetBlockProfileRate(1)
+	}
 	g := errgroup.Group{}
 	g.Go(func() error {
 		logger.Debug().Msg("starting internal server")
