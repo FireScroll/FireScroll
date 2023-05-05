@@ -16,6 +16,10 @@ var (
 		Help:    "Latencies for partition-level operations in microseconds",
 		Buckets: []float64{10, 15, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000, 1250, 1500, 2000, 2500, 3000},
 	}, []string{"operation"})
+	Metric_Partitions = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "partitions",
+		Help: "The number of partitions on this node",
+	})
 )
 
 func registerMetrics() {
