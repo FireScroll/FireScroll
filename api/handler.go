@@ -175,7 +175,9 @@ func (s *HTTPServer) handleGet(c echo.Context) error {
 		return fmt.Errorf("error getting records: %w", err)
 	}
 	close(results)
-	res := GetRes{}
+	res := GetRes{
+		Results: []partitions.Record{}, // no null return
+	}
 
 	for result := range results {
 		res.Results = append(res.Results, result...)
