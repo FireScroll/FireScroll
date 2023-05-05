@@ -44,8 +44,9 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
     * [Mutations](#mutations)
     * [Partitions](#partitions)
   * [Backups and Snapshotting](#backups-and-snapshotting)
-  * [Recommended Redpanda/Kafka Settings](#recommended-redpandakafka-settings)
   * [Architecture](#architecture)
+  * [Performance](#performance)
+  * [Recommended Redpanda/Kafka Settings](#recommended-redpandakafka-settings)
 <!-- TOC -->
 
 ## Features
@@ -303,10 +304,6 @@ BACKUP_TIMEOUT_SEC
 S3_RESTORE
 ```
 
-## Recommended Redpanda/Kafka Settings
-
-Make sure that the `group_max_session_timeout_ms` and `group_min_session_timeout_ms` range in Redpanda (Kafka uses `.` instead of `_`) allows for your `KAFKA_SESSION_MS` env var value (default `60000`). Redpanda uses a `30000` max so it will need to be adjusted.
-
 ## Architecture
 
 See the [blog post here](https://blog.danthegoodman.com/firescroll--an-unkillable-multi-region-kv-database-that-scales-reads-to-infinity) for a more detailed look at the architecture.
@@ -322,3 +319,40 @@ This arch also enables arbitrary number of read replicas for increased performan
 It's also extremely easy to manage. By having a 2-tier architecture (Kafka -> Nodes) there is no complex cascading replication.
 
 Backups to S3 are also used to aid in partition remapping and bringing new replicas online, allowing the Kafka log to be keep a low retention without losing data.
+
+## Performance
+
+_This section is still WIP, and may no longer be relevant as optimizations are made. Always do performance tests for your use cases in your environment for more accurate numbers._
+
+Even with many hundreds of requests per second running on a laptop, FireScroll is able to keep p98 of get requests <1ms, with most requests happening under 400us:
+
+```
+# HELP http_latencies_micro Full HTTP request processing latencies. Includes remote lookups for gets.
+# TYPE http_latencies_micro histogram
+http_latencies_micro_bucket{operation="get",le="100"} 0
+http_latencies_micro_bucket{operation="get",le="200"} 54
+http_latencies_micro_bucket{operation="get",le="300"} 2494
+http_latencies_micro_bucket{operation="get",le="400"} 10829
+http_latencies_micro_bucket{operation="get",le="500"} 16003
+http_latencies_micro_bucket{operation="get",le="750"} 17336
+http_latencies_micro_bucket{operation="get",le="1000"} 17456
+http_latencies_micro_bucket{operation="get",le="1250"} 17507
+http_latencies_micro_bucket{operation="get",le="1500"} 17549
+http_latencies_micro_bucket{operation="get",le="2000"} 17602
+http_latencies_micro_bucket{operation="get",le="2500"} 17640
+http_latencies_micro_bucket{operation="get",le="3000"} 17681
+http_latencies_micro_bucket{operation="get",le="4000"} 17714
+http_latencies_micro_bucket{operation="get",le="5000"} 17742
+http_latencies_micro_bucket{operation="get",le="6000"} 17762
+http_latencies_micro_bucket{operation="get",le="10000"} 17780
+http_latencies_micro_bucket{operation="get",le="15000"} 17791
+http_latencies_micro_bucket{operation="get",le="+Inf"} 17791
+http_latencies_micro_sum{operation="get"} 7.774916e+06
+http_latencies_micro_count{operation="get"} 17791
+```
+
+
+
+## Recommended Redpanda/Kafka Settings
+
+Make sure that the `group_max_session_timeout_ms` and `group_min_session_timeout_ms` range in Redpanda (Kafka uses `.` instead of `_`) allows for your `KAFKA_SESSION_MS` env var value (default `60000`). Redpanda uses a `30000` max so it will need to be adjusted.
