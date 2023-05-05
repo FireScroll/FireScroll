@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FireScroll/gologger"
+	"github.com/danthegoodman1/FireScroll/internal"
 	"github.com/danthegoodman1/FireScroll/partitions"
 	"github.com/danthegoodman1/FireScroll/utils"
 	"github.com/samber/lo"
@@ -305,6 +306,9 @@ func (consumer *LogConsumer) topicInfoLoop() {
 			logger.Fatal().Err(err).Msg("error removing partition, exiting")
 		}
 	}
+
+	// Set the current partitions
+	internal.Metric_Partitions.Set(float64(len(myPartitions)))
 }
 
 // launchPollRecordLoop is launched in a goroutine

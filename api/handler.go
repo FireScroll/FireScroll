@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/danthegoodman1/FireScroll/gossip"
+	"github.com/danthegoodman1/FireScroll/internal"
 	"github.com/danthegoodman1/FireScroll/partitions"
 	"github.com/danthegoodman1/FireScroll/utils"
 	"github.com/labstack/echo/v4"
@@ -23,15 +24,23 @@ var (
 )
 
 func (s *HTTPServer) operationHandler(c echo.Context) error {
+	st := time.Now()
 	operation := partitions.Operation(c.Param("op"))
+	var err error
 	switch operation {
 	case partitions.OperationPut, partitions.OperationDelete:
-		return s.handleMutation(c)
+		err = s.handleMutation(c)
 	case partitions.OperationGet:
-		return s.handleGet(c)
+		err = s.handleGet(c)
 	default:
-		return c.String(http.StatusBadRequest, fmt.Sprintf("unknown operation '%s'", operation))
+		err = c.String(http.StatusBadRequest, fmt.Sprintf("unknown operation '%s'", operation))
 	}
+	if err == nil {
+		internal.Metric_HTTPLatenciesMicro.With(map[string]string{
+			"operation": string(operation),
+		}).Observe(float64(time.Since(st).Microseconds()))
+	}
+	return err
 }
 
 type MutationReq struct {
