@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/danthegoodman1/FireScroll/internal"
 	"github.com/danthegoodman1/FireScroll/utils"
 	"github.com/dgraph-io/badger/v4"
 	_ "github.com/mattn/go-sqlite3"
@@ -202,7 +203,7 @@ func getPartitionPath(id int32) string {
 
 func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 	var records []Record
-
+	s := time.Now()
 	err := p.DB.View(func(txn *badger.Txn) error {
 		for _, key := range keys {
 			item, err := txn.Get(formatRecordKey(key.Pk, key.Sk))
@@ -229,7 +230,9 @@ func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading record from DB: %w", err)
 	}
-
+	internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
+		"operation": "get",
+	}).Observe(float64(time.Since(s).Microseconds()))
 	return records, nil
 }
 
@@ -248,8 +251,9 @@ func (p *Partition) handlePut(pk, sk string, ifStmt *string, data map[string]any
 	// TODO: remove log line
 	logger.Debug().Msg("handling put")
 	key := formatRecordKey(pk, sk)
+	s := time.Now()
 	n := time.UnixMilli(tsMs)
-	return p.DB.Update(func(txn *badger.Txn) error {
+	err := p.DB.Update(func(txn *badger.Txn) error {
 		var stored StoredRecord
 		item, err := txn.Get(key)
 		if errors.Is(err, badger.ErrKeyNotFound) {
@@ -288,6 +292,12 @@ func (p *Partition) handlePut(pk, sk string, ifStmt *string, data map[string]any
 
 		return p.updateOffsetInTx(txn, offset)
 	})
+	if err != nil {
+		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
+			"operation": "put",
+		}).Observe(float64(time.Since(s).Microseconds()))
+	}
+	return err
 }
 
 // updateOffsetInTx handles the error message for you so you can just return it
@@ -305,8 +315,9 @@ func (p *Partition) updateOffsetInTx(txn *badger.Txn, offset int64) error {
 func (p *Partition) handleDelete(pk, sk string, ifStmt *string, offset int64) error {
 	// TODO: remove log line
 	logger.Debug().Msg("handling delete")
+	s := time.Now()
 	key := formatRecordKey(pk, sk)
-	return p.DB.Update(func(txn *badger.Txn) error {
+	err := p.DB.Update(func(txn *badger.Txn) error {
 		shouldDelete := true
 		if ifStmt != nil {
 			var stored StoredRecord
@@ -342,6 +353,12 @@ func (p *Partition) handleDelete(pk, sk string, ifStmt *string, offset int64) er
 
 		return p.updateOffsetInTx(txn, offset)
 	})
+	if err != nil {
+		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
+			"operation": "delete",
+		}).Observe(float64(time.Since(s).Microseconds()))
+	}
+	return err
 }
 
 // pkToStorageKey formats the key for storage
