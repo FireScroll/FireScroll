@@ -2,7 +2,7 @@
 
 A highly available multi-region KV database for massive read scalability with a focus on low latency and massive concurrency.  Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
 
-Perfect for configuration management at scale where you want global low-latency reads without caching or cold first reads.
+Perfect for configuration management at the edge where you want global low-latency reads without caching or cold first reads.
 
 Useful for low-latency cases that can tolerate short cache-like behavior such as:
 - DNS providers (mapping a domain name to records)
