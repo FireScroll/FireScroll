@@ -67,7 +67,6 @@ func (s *HTTPServer) handleMutation(c echo.Context) error {
 			if err != nil {
 				return c.String(http.StatusBadRequest, fmt.Sprintf("error compiling `if` statement `%s`: %s", *mut.If, err))
 			}
-			logger.Info().Msg("GOOD IF CONDITION")
 		}
 		jsonB, err := json.Marshal(mut)
 		if err != nil {
@@ -221,9 +220,11 @@ func (s *HTTPServer) doRemoteOperation(ctx context.Context, addr string, op part
 }
 
 type ListReq struct {
-	Pk      string `json:"pk"`
-	SkAfter string `json:"sk_after"`
-	Limit   int64  `json:"limit" validate:"gte=0"`
+	Pk       string  `json:"pk"`
+	SkPrefix string  `json:"sk_prefix"`
+	Limit    int64   `json:"limit" validate:"gte=0"`
+	If       *string `json:"if"`
+	IfStop   bool    `json:"if_stop"`
 }
 
 func (s *HTTPServer) handleList(c echo.Context) error {
@@ -236,8 +237,15 @@ func (s *HTTPServer) handleList(c echo.Context) error {
 	part := utils.GetPartition(reqBody.Pk)
 	var listRes []partitions.Record
 	var err error
+	if reqBody.If != nil {
+		// Verify it's valid
+		err := partitions.VerifyIfStatement(*reqBody.If)
+		if err != nil {
+			return c.String(http.StatusBadRequest, fmt.Sprintf("error compiling `if` statement `%s`: %s", *reqBody.If, err))
+		}
+	}
 	if lo.Contains(localPartitions, part) {
-		listRes, err = s.pm.ListRecords(part, reqBody.Pk, reqBody.SkAfter, reqBody.Limit)
+		listRes, err = s.pm.ListRecords(part, reqBody.Pk, reqBody.SkPrefix, reqBody.Limit, reqBody.If, reqBody.IfStop)
 		if err != nil {
 			return fmt.Errorf("error in pm.ListRecords: %w", err)
 		}
