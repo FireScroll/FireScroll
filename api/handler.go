@@ -32,6 +32,8 @@ func (s *HTTPServer) operationHandler(c echo.Context) error {
 		err = s.handleMutation(c)
 	case partitions.OperationGet:
 		err = s.handleGet(c)
+	case partitions.OperationList:
+		err = s.handleList(c)
 	default:
 		err = c.String(http.StatusBadRequest, fmt.Sprintf("unknown operation '%s'", operation))
 	}
@@ -106,7 +108,7 @@ type GetReq struct {
 	Records []partitions.RecordKey `validate:"min=1"`
 }
 type GetRes struct {
-	Results []partitions.Record
+	Records []partitions.Record
 }
 
 func (s *HTTPServer) handleGet(c echo.Context) error {
@@ -162,7 +164,7 @@ func (s *HTTPServer) handleGet(c echo.Context) error {
 			} else if err != nil {
 				return fmt.Errorf("error in GetRandomRemotePartition for partition %d: %w", partition, err)
 			}
-			r, err := s.getRemoteRecords(c.Request().Context(), addr, keys)
+			r, err := s.doRemoteOperation(c.Request().Context(), addr, partitions.OperationGet, GetReq{Records: keys})
 			if err != nil {
 				return fmt.Errorf("error in getRemoteRecords for partition %d: %w", partition, err)
 			}
@@ -176,23 +178,23 @@ func (s *HTTPServer) handleGet(c echo.Context) error {
 	}
 	close(results)
 	res := GetRes{
-		Results: []partitions.Record{}, // no null return
+		Records: []partitions.Record{}, // no null return
 	}
 
 	for result := range results {
-		res.Results = append(res.Results, result...)
+		res.Records = append(res.Records, result...)
 	}
 
 	return c.JSON(http.StatusOK, res)
 }
 
-func (s *HTTPServer) getRemoteRecords(ctx context.Context, addr string, keys []partitions.RecordKey) ([]partitions.Record, error) {
+func (s *HTTPServer) doRemoteOperation(ctx context.Context, addr string, op partitions.Operation, body any) ([]partitions.Record, error) {
 	// TODO: encoders for encoding and decoding of bodies so no double allocation
-	b, err := json.Marshal(GetReq{Records: keys})
+	b, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("error in json.Marshal: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s/records/get", addr), bytes.NewReader(b))
+	req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s/records/%s", addr, op), bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("error in http.NewRequestWithContext: %w", err)
 	}
@@ -215,5 +217,42 @@ func (s *HTTPServer) getRemoteRecords(ctx context.Context, addr string, keys []p
 	if err != nil {
 		return nil, fmt.Errorf("error in json.Unmarshal: %w", err)
 	}
-	return getRes.Results, nil
+	return getRes.Records, nil
+}
+
+type ListReq struct {
+	Pk      string `json:"pk"`
+	SkAfter string `json:"sk_after"`
+	Limit   int64  `json:"limit" validate:"gte=0"`
+}
+
+func (s *HTTPServer) handleList(c echo.Context) error {
+	var reqBody ListReq
+	if err := ValidateRequest(c, &reqBody); err != nil {
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+
+	localPartitions := s.pm.GetPartitionIDs()
+	part := utils.GetPartition(reqBody.Pk)
+	var listRes []partitions.Record
+	var err error
+	if lo.Contains(localPartitions, part) {
+		listRes, err = s.pm.ListRecords(part, reqBody.Pk, reqBody.SkAfter, reqBody.Limit)
+		if err != nil {
+			return fmt.Errorf("error in pm.ListRecords: %w", err)
+		}
+	} else {
+		addr, err := s.gm.GetRandomRemotePartition(part)
+		if err != nil {
+			return fmt.Errorf("error in GetRandomRemotePartition: %w", err)
+		}
+		listRes, err = s.doRemoteOperation(c.Request().Context(), addr, partitions.OperationList, reqBody)
+	}
+
+	res := GetRes{
+		Records: []partitions.Record{}, // no null return
+	}
+	res.Records = append(res.Records, listRes...)
+
+	return c.JSON(http.StatusOK, res)
 }

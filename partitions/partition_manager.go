@@ -146,3 +146,17 @@ func (pm *PartitionManager) ReadRecords(partMap map[int32][]RecordKey) (records 
 	}
 	return
 }
+
+func (pm *PartitionManager) ListRecords(partition int32, pk, skAfter string, limit int64) (records []Record, err error) {
+	part, exists := pm.Partitions.Load(partition)
+	if !exists {
+		return nil, ErrPartitionNotFound
+	}
+
+	res, err := part.ListRecords(pk, skAfter, limit)
+	if err != nil {
+		err = fmt.Errorf("error in ListRecords for part %d: %w", part, err)
+	}
+	records = append(records, res...)
+	return
+}

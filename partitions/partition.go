@@ -247,6 +247,61 @@ func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 	return records, nil
 }
 
+func (p *Partition) ListRecords(pk, skAfter string, limit int64) ([]Record, error) {
+	var records []Record
+	s := time.Now()
+	var read int64 = 0
+	err := p.DB.View(func(txn *badger.Txn) error {
+		if txn == nil {
+			return ErrTxnNil
+		}
+
+		it := txn.NewIterator(badger.DefaultIteratorOptions)
+		defer it.Close()
+		prefix := formatRecordKey(pk, skAfter)
+		for it.Seek(prefix); it.ValidForPrefix(prefix) && (limit == 0 || (read < limit)); it.Next() {
+			item := it.Item()
+			pk, sk, err := splitRecordKey(item.Key())
+			if err != nil {
+				return fmt.Errorf("error in splitRecordKey: %w", err)
+			}
+
+			if skAfter == sk {
+				// We need to skip this
+				continue
+			}
+
+			b, err := item.ValueCopy(nil)
+			if err != nil {
+				return fmt.Errorf("error in item.ValueCopy: %w", err)
+			}
+
+			var storedRecord StoredRecord
+			err = json.Unmarshal(b, &storedRecord)
+			if err != nil {
+				return fmt.Errorf("error in json.Unmarshal: %w", err)
+			}
+			records = append(records, storedRecord.Record(pk, sk))
+			read++
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error reading record from DB: %w", err)
+	}
+
+	if len(records) == 0 {
+		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
+			"operation": "list_full_miss",
+		}).Observe(float64(time.Since(s).Microseconds()))
+	} else {
+		internal.Metric_LocalPartitionLatenciesMicro.With(map[string]string{
+			"operation": "list",
+		}).Observe(float64(time.Since(s).Microseconds()))
+	}
+	return records, nil
+}
+
 func (p *Partition) HandleMutation(mutation RecordMutation, offset int64) error {
 	switch mutation.Mutation {
 	case OperationPut:

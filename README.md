@@ -81,13 +81,11 @@ See examples in [records.http](api/records.http)
 
 ### Delete Record(s) `POST /records/delete`
 
-### (WIP) List Records `POST /records/list`
+### List Records `POST /records/list`
 
-Can have starts_after or ends_before to determine the direction, and prefix
+Given a single primary key, you can list records sorted by their sort key. You may optionally provide a `sk_after` to start after a given sort key.
 
-Can specify a pk or a partition number. If pk then sk is the filter. If partition number then pk and sk are filters. Use `eq`, `gt` and `lt` in sub-object.
-
-Can use IF to filter rows, not on partition number
+You may also optionally provide a `limit` (>= 0) for limiting results. `0` (by default) will not limit the amount of records fetched, so be careful as unbound listing could result in out of memory errors.
 
 ### (WIP) Batch Put and Delete Records `POST /records/batch`
 
@@ -215,6 +213,31 @@ The best way to check for whether a mutation applied is to have some random ID t
 See examples in [records.http](api/records.http)
 
 _Note: `null` and `nil` can be used interchangeably_
+
+Checking whether the key `hey == ho`
+
+```
+{
+  "Records": [
+    {
+      "pk": "pk1",
+      "sk": "sk1",
+      "data": {
+        "hey": "ho"
+      },
+      "if": "data.hey == "ho"
+    }
+  ]
+}
+```
+
+This will only apply the mutation if `data` has this:
+
+```
+{
+  "hey": "ho"
+}
+```
 
 ## Scaling the cluster
 
