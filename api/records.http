@@ -31,6 +31,20 @@ Content-Type: application/json
       "data": {
         "lets": "go"
       }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3_a",
+      "data": {
+        "lets": "go"
+      }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3a",
+      "data": {
+        "lets": "go"
+      }
     }
   ]
 }
@@ -84,7 +98,28 @@ Content-Type: application/json
 
 {
   "pk": "pk3",
-  "sk_after": "sk3"
+  "sk_prefix": "sk3"
+}
+
+### List records (with if, no stop so 2 records are returned)
+POST http://localhost:8190/records/list
+Content-Type: application/json
+
+{
+  "pk": "pk3",
+  "sk_prefix": "sk3",
+  "if": "sk > \"sk3\" && sk not contains \"_a\""
+}
+
+### List records (with if and if_stop, so only one record returned)
+POST http://localhost:8190/records/list
+Content-Type: application/json
+
+{
+  "pk": "pk3",
+  "sk_prefix": "sk3",
+  "if": "sk > \"sk3\" && sk not contains \"_a\"",
+  "if_stop": true
 }
 
 ### Delete records

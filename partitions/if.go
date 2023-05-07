@@ -35,7 +35,6 @@ func CompareIfStatement(statement string, cmpr compareRecord) (bool, error) {
 		return false, fmt.Errorf("error in expr.Compile: %w", err)
 	}
 
-	fmt.Println("checking program", statement, "against", cmpr)
 	output, err := expr.Run(program, map[string]any(cmpr))
 	if err != nil {
 		return false, fmt.Errorf("error in expr.Run: %w", err)

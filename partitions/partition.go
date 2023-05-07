@@ -247,7 +247,7 @@ func (p *Partition) ReadRecords(keys []RecordKey) ([]Record, error) {
 	return records, nil
 }
 
-func (p *Partition) ListRecords(pk, skAfter string, limit int64) ([]Record, error) {
+func (p *Partition) ListRecords(pk, skPrefix string, limit int64, ifStmt *string, ifStop bool) ([]Record, error) {
 	var records []Record
 	s := time.Now()
 	var read int64 = 0
@@ -258,7 +258,7 @@ func (p *Partition) ListRecords(pk, skAfter string, limit int64) ([]Record, erro
 
 		it := txn.NewIterator(badger.DefaultIteratorOptions)
 		defer it.Close()
-		prefix := formatRecordKey(pk, skAfter)
+		prefix := formatRecordKey(pk, skPrefix)
 		for it.Seek(prefix); it.ValidForPrefix(prefix) && (limit == 0 || (read < limit)); it.Next() {
 			item := it.Item()
 			pk, sk, err := splitRecordKey(item.Key())
@@ -266,7 +266,7 @@ func (p *Partition) ListRecords(pk, skAfter string, limit int64) ([]Record, erro
 				return fmt.Errorf("error in splitRecordKey: %w", err)
 			}
 
-			if skAfter == sk {
+			if skPrefix == sk {
 				// We need to skip this
 				continue
 			}
@@ -281,8 +281,23 @@ func (p *Partition) ListRecords(pk, skAfter string, limit int64) ([]Record, erro
 			if err != nil {
 				return fmt.Errorf("error in json.Unmarshal: %w", err)
 			}
-			records = append(records, storedRecord.Record(pk, sk))
-			read++
+
+			should := true
+			if ifStmt != nil {
+				should, err = CompareIfStatement(*ifStmt, storedRecord.ToCompareRecord(pk, sk))
+				if err != nil {
+					return fmt.Errorf("error in CompareIfStatement: %w", err)
+				}
+			}
+
+			if should {
+				records = append(records, storedRecord.Record(pk, sk))
+				read++
+			} else if ifStop {
+				// We need to break
+				return nil
+			}
+
 		}
 		return nil
 	})
