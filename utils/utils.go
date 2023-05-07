@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"golang.org/x/exp/constraints"
 	"log"
 	"os"
 	"strconv"
@@ -91,4 +92,18 @@ func GetPartition(k string) int32 {
 
 func Ptr[T any](t T) *T {
 	return &t
+}
+
+func Min[T constraints.Ordered](a, b T) T {
+	if a > b {
+		return b
+	}
+	return a
+}
+
+func Deref[T any](ref *T, fallback T) T {
+	if ref == nil {
+		return fallback
+	}
+	return *ref
 }

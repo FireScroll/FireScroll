@@ -12,8 +12,22 @@ Content-Type: application/json
       }
     },
     {
+      "pk": "pk1",
+      "sk": "sk1_2",
+      "data": {
+        "hey": "ho"
+      }
+    },
+    {
       "pk": "pk3",
       "sk": "sk3",
+      "data": {
+        "lets": "go"
+      }
+    },
+    {
+      "pk": "pk3",
+      "sk": "sk3_1",
       "data": {
         "lets": "go"
       }
@@ -53,6 +67,24 @@ Content-Type: application/json
       "sk": "sk3"
     }
   ]
+}
+
+### List records (no offset)
+POST http://localhost:8190/records/list
+Content-Type: application/json
+
+{
+  "pk": "pk3",
+  "limit": 1
+}
+
+### List records (with offset)
+POST http://localhost:8190/records/list
+Content-Type: application/json
+
+{
+  "pk": "pk3",
+  "sk_after": "sk3"
 }
 
 ### Delete records
