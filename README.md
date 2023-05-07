@@ -91,6 +91,8 @@ Options:
 | `if`        | Conditional in which records will either be omitted, or listing will stop. Default omitted, controlled by `if_stop`. Must be `>= 0`, default `0`. If `0`, then no limit. Be careful about out-of-memory errors. |
 | `if_stop`   | If `true`, then once the `if` condition fails (if provided) then listing will stop. Useful for only listing a given prefix, and preventing over-listing.                                                        |
 
+The example requests in [records.http](api/records.http) provide many use cases based on the test data.
+
 ### (WIP) Batch Put and Delete Records `POST /records/batch`
 
 Multiple `Put` and `Delete` operations can be sent in a single request, which will result in all operations being atomic.
