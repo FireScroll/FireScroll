@@ -38,9 +38,11 @@ func (s *HTTPServer) operationHandler(c echo.Context) error {
 		err = c.String(http.StatusBadRequest, fmt.Sprintf("unknown operation '%s'", operation))
 	}
 	if err == nil {
-		internal.Metric_HTTPLatenciesMicro.With(map[string]string{
-			"operation": string(operation),
-		}).Observe(float64(time.Since(st).Microseconds()))
+		go func(st time.Time) {
+			internal.Metric_HTTPLatenciesMicro.With(map[string]string{
+				"operation": string(operation),
+			}).Observe(float64(time.Since(st).Microseconds()))
+		}(st)
 	}
 	return err
 }
