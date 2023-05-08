@@ -359,28 +359,50 @@ Even with many hundreds of requests per second running on a laptop, FireScroll i
 # HELP http_latencies_micro Full HTTP request processing latencies. Includes remote lookups for gets.
 # TYPE http_latencies_micro histogram
 http_latencies_micro_bucket{operation="get",le="100"} 0
-http_latencies_micro_bucket{operation="get",le="200"} 54
-http_latencies_micro_bucket{operation="get",le="300"} 2494
-http_latencies_micro_bucket{operation="get",le="400"} 10829
-http_latencies_micro_bucket{operation="get",le="500"} 16003
-http_latencies_micro_bucket{operation="get",le="750"} 17336
-http_latencies_micro_bucket{operation="get",le="1000"} 17456
-http_latencies_micro_bucket{operation="get",le="1250"} 17507
-http_latencies_micro_bucket{operation="get",le="1500"} 17549
-http_latencies_micro_bucket{operation="get",le="2000"} 17602
-http_latencies_micro_bucket{operation="get",le="2500"} 17640
-http_latencies_micro_bucket{operation="get",le="3000"} 17681
-http_latencies_micro_bucket{operation="get",le="4000"} 17714
-http_latencies_micro_bucket{operation="get",le="5000"} 17742
-http_latencies_micro_bucket{operation="get",le="6000"} 17762
-http_latencies_micro_bucket{operation="get",le="10000"} 17780
-http_latencies_micro_bucket{operation="get",le="15000"} 17791
-http_latencies_micro_bucket{operation="get",le="+Inf"} 17791
-http_latencies_micro_sum{operation="get"} 7.774916e+06
-http_latencies_micro_count{operation="get"} 17791
+http_latencies_micro_bucket{operation="get",le="200"} 122
+http_latencies_micro_bucket{operation="get",le="300"} 3353
+http_latencies_micro_bucket{operation="get",le="400"} 11920
+http_latencies_micro_bucket{operation="get",le="500"} 16459
+http_latencies_micro_bucket{operation="get",le="750"} 17980
+http_latencies_micro_bucket{operation="get",le="1000"} 18121
+http_latencies_micro_bucket{operation="get",le="1250"} 18177
+http_latencies_micro_bucket{operation="get",le="1500"} 18216
+http_latencies_micro_bucket{operation="get",le="2000"} 18296
+http_latencies_micro_bucket{operation="get",le="2500"} 18333
+http_latencies_micro_bucket{operation="get",le="3000"} 18360
+http_latencies_micro_bucket{operation="get",le="4000"} 18425
+http_latencies_micro_bucket{operation="get",le="5000"} 18456
+http_latencies_micro_bucket{operation="get",le="6000"} 18484
+http_latencies_micro_bucket{operation="get",le="10000"} 18538
+http_latencies_micro_bucket{operation="get",le="15000"} 18580
+http_latencies_micro_bucket{operation="get",le="+Inf"} 18649
+http_latencies_micro_sum{operation="get"} 1.2027937e+07
+http_latencies_micro_count{operation="get"} 18649
+# HELP partition_operation_latencies_micro Latencies for partition-level operations in microseconds
+# TYPE partition_operation_latencies_micro histogram
+partition_operation_latencies_micro_bucket{operation="get",le="10"} 1961
+partition_operation_latencies_micro_bucket{operation="get",le="15"} 11391
+partition_operation_latencies_micro_bucket{operation="get",le="25"} 16730
+partition_operation_latencies_micro_bucket{operation="get",le="50"} 26409
+partition_operation_latencies_micro_bucket{operation="get",le="75"} 34313
+partition_operation_latencies_micro_bucket{operation="get",le="100"} 36529
+partition_operation_latencies_micro_bucket{operation="get",le="200"} 37250
+partition_operation_latencies_micro_bucket{operation="get",le="300"} 37273
+partition_operation_latencies_micro_bucket{operation="get",le="400"} 37279
+partition_operation_latencies_micro_bucket{operation="get",le="500"} 37282
+partition_operation_latencies_micro_bucket{operation="get",le="750"} 37285
+partition_operation_latencies_micro_bucket{operation="get",le="1000"} 37287
+partition_operation_latencies_micro_bucket{operation="get",le="1250"} 37288
+partition_operation_latencies_micro_bucket{operation="get",le="1500"} 37289
+partition_operation_latencies_micro_bucket{operation="get",le="2000"} 37289
+partition_operation_latencies_micro_bucket{operation="get",le="2500"} 37289
+partition_operation_latencies_micro_bucket{operation="get",le="3000"} 37289
+partition_operation_latencies_micro_bucket{operation="get",le="+Inf"} 37290
+partition_operation_latencies_micro_sum{operation="get"} 1.417517e+06
+partition_operation_latencies_micro_count{operation="get"} 37290
 ```
 
-
+As you can tell in the difference between HTTP handler and Partition-level performance, there are plenty of optimization opportunities!
 
 ## Recommended Redpanda/Kafka Settings
 
