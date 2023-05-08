@@ -404,6 +404,8 @@ partition_operation_latencies_micro_count{operation="get"} 37290
 
 As you can tell in the difference between HTTP handler and Partition-level performance, there are plenty of optimization opportunities!
 
+There is also plenty of optimization to be had by using a more efficient serialization format and serializer (default Go JSON is known to be slow), collapsing requests to remote partitions, and more!
+
 ## Recommended Redpanda/Kafka Settings
 
 Make sure that the `group_max_session_timeout_ms` and `group_min_session_timeout_ms` range in Redpanda (Kafka uses `.` instead of `_`) allows for your `KAFKA_SESSION_MS` env var value (default `60000`). Redpanda uses a `30000` max so it will need to be adjusted.
