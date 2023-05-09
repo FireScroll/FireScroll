@@ -353,7 +353,7 @@ Backups to S3 are also used to aid in partition remapping and bringing new repli
 
 _This section is still WIP, and may no longer be relevant as optimizations are made. Always do performance tests for your use cases in your environment for more accurate numbers._
 
-Even with many hundreds of requests per second running on a laptop, FireScroll is able to keep p98 of get requests <1ms, with most requests happening under 400us:
+Even with ~1000 requests per second running on a laptop, FireScroll is able to keep p98 of get requests <1ms, with most requests happening under 400us. Every request was pulling 2 records, each from their own partition:
 
 ```
 # HELP http_latencies_micro Full HTTP request processing latencies. Includes remote lookups for gets.
