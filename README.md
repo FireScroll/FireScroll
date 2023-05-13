@@ -22,7 +22,7 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
     * [Put Record(s) `POST /records/put`](#put-records-post-recordsput)
     * [Get Record(s) `POST /records/get`](#get-records-post-recordsget)
     * [Delete Record(s) `POST /records/delete`](#delete-records-post-recordsdelete)
-    * [(WIP) List Records `POST /records/list`](#wip-list-records-post-recordslist)
+    * [List Records `POST /records/list`](#list-records-post-recordslist)
     * [(WIP) Batch Put and Delete Records `POST /records/batch`](#wip-batch-put-and-delete-records-post-recordsbatch)
   * [Quick Start (running locally)](#quick-start-running-locally)
     * [Docker compose:](#docker-compose)
