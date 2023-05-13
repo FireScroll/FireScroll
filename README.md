@@ -87,6 +87,8 @@ Options:
 
 | **option**  | **description**                                                                                                                                                                                                 |
 |-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pk`        | Required, the partition key to list over.                                                                                                                                                                       |
+| `limit`     | The max number of records to return. A value of `0` means no limit, be careful of memory usage. Default `0`.                                                                                                    |
 | `sk_prefix` | Start at a certain `sk` prefix. Can be a partial or entire sort key. If `sk_prefix` == `sk`, the record will be skipped. This is so that it can be used to continue sorting from where you left off.            |
 | `if`        | Conditional in which records will either be omitted, or listing will stop. Default omitted, controlled by `if_stop`. Must be `>= 0`, default `0`. If `0`, then no limit. Be careful about out-of-memory errors. |
 | `if_stop`   | If `true`, then once the `if` condition fails (if provided) then listing will stop. Useful for only listing a given prefix, and preventing over-listing.                                                        |
