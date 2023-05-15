@@ -1,6 +1,8 @@
-# FireScroll 
+# FireScroll
 
-A highly available multi-region KV database for massive read scalability with a focus on low latency and massive concurrency.  Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
+The read-optimized database to deploy everywhere.
+
+A highly available multi-region KV database for massive read scalability with a focus on low latency and massive concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
 
 Perfect for configuration management at the edge where you want global low-latency reads without caching or cold first reads.
 
