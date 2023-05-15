@@ -2,7 +2,7 @@
 
 The config database to deploy everywhere.
 
-A highly available multi-region KV database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. Need more read throughput? Just add more nodes.
+A highly available multi-region KV database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster.
 
 Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter. Write once, read from hundreds of nodes around the world in under a second.
 
