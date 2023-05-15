@@ -6,7 +6,7 @@ A highly available multi-region KV database for massive read scalability with a 
 
 Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter. Write once, read from hundreds of nodes around the world in under a second.
 
-Useful for low-latency cases that can tolerate short cache-like behavior such as:
+Useful for low-latency cases that can tolerate sub-second cache-like behavior such as:
 - DNS providers (mapping a domain name to records)
 - Webhost routing (e.g. Vercel mapping your domain to your code)
 - Feature flagging
