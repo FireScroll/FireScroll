@@ -6,8 +6,6 @@ A highly available multi-region config database for massive read scalability wit
 
 Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter.
 
-With FireScroll you perform mutations (put, delete) to a centralized log cluster powered by Kafka, which partitions and streams those changes to FireScroll nodes deployed in all of the same data centers as your logical compute (API, services, etc). You read from FireScroll nodes within the same data center to ensure you have the lowest possible latency lookups, while also ensuring that all mutation operations are linearizable.
-
 Useful for low-latency cases that can tolerate sub-second cache-like behavior such as:
 - DNS providers serving DNS records
 - Webhost routing (e.g. Vercel mapping your urls to your files and functions)
@@ -341,7 +339,9 @@ S3_RESTORE
 
 ## Architecture
 
-See the [blog post here](https://blog.danthegoodman.com/firescroll--an-unkillable-multi-region-kv-database-that-scales-reads-to-infinity) for a more detailed look at the architecture.
+With FireScroll you perform mutations (put, delete) to a centralized log cluster powered by Kafka, which partitions and streams those changes to FireScroll nodes deployed in all of the same data centers as your logical compute (API, services, etc). You read from FireScroll nodes within the same data center to ensure you have the lowest possible latency lookups, while also ensuring that all mutation operations are linearizable.
+
+See the intro [blog post here](https://blog.danthegoodman.com/firescroll--an-unkillable-multi-region-kv-database-that-scales-reads-to-infinity) for a more detailed look at the architecture.
 
 Briefly, this database turns the traditional DB inside-out: Rather than having multiple nodes with each their own WAL, a distributed central WAL cluster is used (Kafka/Redpanda) and nodes consume from that, materializing to disk and backing that snapshot of the log to S3 so that they can be restored on other nodes (during partition remapping) without needing to consume the entire WAL history (this is specifically important for allowing us to have a really short retention period on the WAL!)
 
