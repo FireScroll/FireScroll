@@ -4,7 +4,7 @@ The config database to deploy everywhere.
 
 A highly available multi-region KV database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster.
 
-Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter. Write once, read from hundreds of nodes around the world in under a second.
+Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter. Write once, read from hundreds of nodes around the world in under a second. It also works very well across cloud providers, so you can truly put nodes everywhere!
 
 With FireScroll you perform mutations (put, delete) to a centralized log cluster powered by Kafka, which partitions and streams those changes to FireScroll nodes deployed in all of the same data centers as your logical compute (API, services, etc). You read from FireScroll nodes within the same data center to ensure you have the lowest possible latency lookups, while also ensuring that all mutation operations are linearizable.
 
