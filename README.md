@@ -2,7 +2,7 @@
 
 The config database to deploy everywhere.
 
-A highly available multi-region config database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster at scales of hundreds of nodes.
+A highly available multi-region config database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster.
 
 Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter.
 
