@@ -1,13 +1,15 @@
-# FireScroll 
+# FireScroll 🔥📜
 
-A highly available multi-region KV database for massive read scalability with a focus on low latency and massive concurrency.  Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster. No maintenance or repairs required.
+The config database to deploy everywhere.
 
-Perfect for configuration management at the edge where you want global low-latency reads without caching or cold first reads.
+A highly available multi-region config database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster.
 
-Useful for low-latency cases that can tolerate short cache-like behavior such as:
-- DNS providers (mapping a domain name to records)
-- Webhost routing (e.g. Vercel mapping your domain to your code)
-- Feature flagging
+Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter.
+
+Useful for low-latency cases that can tolerate sub-second cache-like behavior such as:
+- DNS providers serving DNS records
+- Webhost routing (e.g. Vercel mapping your urls to your files and functions)
+- Feature flagging and A/B testing
 - SSL certificate serving
 - CDN configs
 - and many more!
@@ -337,11 +339,13 @@ S3_RESTORE
 
 ## Architecture
 
-See the [blog post here](https://blog.danthegoodman.com/firescroll--an-unkillable-multi-region-kv-database-that-scales-reads-to-infinity) for a more detailed look at the architecture.
+With FireScroll you perform mutations (put, delete) to a centralized log cluster powered by Kafka, which partitions and streams those changes to FireScroll nodes deployed in all of the same data centers as your logical compute (API, services, etc). You read from FireScroll nodes within the same data center to ensure you have the lowest possible latency lookups, while also ensuring that all mutation operations are linearizable.
 
-Briefly, this database turns the traditional DB inside-out: Rather than having multiple nodes with each their own WAL, a distributed central WAL cluster is used (Kafka/Redpanda) and nodes consume from that, materializing (truncating) to disk and backing that snapshot of the log to S3 so that they can be restored on other nodes (during partition remapping) without needing to consume the entire WAL history (this is specifically important for allowing us to have a really short retention period on the WAL!)
+See the intro [blog post here](https://blog.danthegoodman.com/firescroll--an-unkillable-multi-region-kv-database-that-scales-reads-to-infinity) for a more detailed look at the architecture.
 
-This allows us to decouple reads and writes, meaning that nodes in different regions can consume at their own pace. For example the latencies of servers in Japan do not affect the write performance of servers in North Virginia. This also removes the issue found in Cassandra of the possibility of entering a permanently inconsistent state between replicas of partitions, requiring repairs. It also means that nodes are not responsible for coordinating replication, meaning they can focus on serving reads fast.
+Briefly, this database turns the traditional DB inside-out: Rather than having multiple nodes with each their own WAL, a distributed central WAL cluster is used (Kafka/Redpanda) and nodes consume from that, materializing to disk and backing that snapshot of the log to S3 so that they can be restored on other nodes (during partition remapping) without needing to consume the entire WAL history (this is specifically important for allowing us to have a really short retention period on the WAL!)
+
+This allows us to decouple reads and writes, meaning that nodes in different regions can consume at their own pace. For example the latencies of servers in Japan do not affect the write performance of servers in North Virginia. This also removes the issue found in Cassandra of the possibility of entering a permanently inconsistent state between replicas of partitions, requiring repairs. It also means that nodes are not responsible for coordinating replication, allowing them to focus on serving reads fast.
 
 It uses Kafka or Redpanda as the distributed WAL (prefer Redpanda), and Badger as the local KV db. A single node can easily serve reads in the hundreds of thousands per second.
 
