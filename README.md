@@ -12,6 +12,7 @@ Useful cases that can tolerate sub-second cache-like behavior such as:
 - Feature flagging and A/B testing
 - SSL certificate serving
 - CDN configs
+- ML model feature store
 - and many more!
 
 FireScroll tackles a very specific use-case, and is meant to be used in addition to a traditional OLTP DB like CockroachDB or Scylla.
