@@ -53,16 +53,12 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
 
 ## Features
 
-- Quick durability of writes with decoupled read throughput
+- Quick durability of linearizable writes with decoupled read throughput
 - Arbitrary number of read replicas supported
-- Designed to serve global low latency reads without sacrificing write performance
-- Remote partition proxying of Get requests
+- Serves global low latency reads (300-700us for <1KB documents) with high concurrency
+- Remote partition proxying for reads
 - Conditional (If) statements checked at mutation time
-- Support for arbitrary number of regions with varying latencies without impacting write or read performance
-- Sub-ms partition reads under nominal load (300-700us for <1KB documents)
-- Extreme concurrency-focused
 - No need to peer regions, only the Kafka cluster needs to be accessible from other regions
-- (WIP) Atomic mutation batches
 
 ## Quick Notes
 
