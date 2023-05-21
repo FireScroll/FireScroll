@@ -1,12 +1,12 @@
 # FireScroll 🔥📜
 
-The config database to deploy everywhere.
+The config database to deploy everywhere, without the complexity of other multi region dbs.
 
-A highly available multi-region config database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes in the cluster.
+A highly available multi-region config database for massive read scalability with a focus on low latency and high concurrency. Have replicas in any number of regions without impacting write or read performance of other nodes.
 
 Perfect for config management in all regions. Serve sub-ms reads from disk to your APIs and services in the same datacenter.
 
-Useful for low-latency cases that can tolerate sub-second cache-like behavior such as:
+Useful cases that can tolerate sub-second cache-like behavior such as:
 - DNS providers serving DNS records
 - Webhost routing (e.g. Vercel mapping your urls to your files and functions)
 - Feature flagging and A/B testing
@@ -61,6 +61,7 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
 - Support for arbitrary number of regions with varying latencies without impacting write or read performance
 - Sub-ms partition reads under nominal load (300-700us for <1KB documents)
 - Extreme concurrency-focused
+- No need to peer regions, only the Kafka cluster needs to be accessible from other regions
 - (WIP) Atomic mutation batches
 
 ## Quick Notes
