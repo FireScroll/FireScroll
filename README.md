@@ -18,7 +18,7 @@ Useful cases that can tolerate sub-second cache-like behavior such as:
 FireScroll tackles a very specific use-case, and is meant to be used in addition to a traditional OLTP DB like CockroachDB or Scylla.
 
 <!-- TOC -->
-* [FireScroll](#firescroll-)
+* [FireScroll 🔥📜](#firescroll-)
   * [Features](#features)
   * [Quick Notes](#quick-notes)
   * [API](#api)
@@ -28,12 +28,11 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
     * [List Records `POST /records/list`](#list-records-post-recordslist)
     * [(WIP) Batch Put and Delete Records `POST /records/batch`](#wip-batch-put-and-delete-records-post-recordsbatch)
   * [Quick Start (running locally)](#quick-start-running-locally)
-    * [Docker compose:](#docker-compose)
-    * [Or build locally:](#or-build-locally)
-    * [Cleanup](#cleanup)
-  * [Setup](#setup)
     * [Mutations Topic](#mutations-topic)
     * [Partitions Topic](#partitions-topic)
+    * [Run with Docker compose:](#run-with-docker-compose)
+    * [Run with a local build:](#run-with-a-local-build)
+    * [Cleanup](#cleanup)
   * [Configuration](#configuration)
   * [The `if` statement](#the-if-statement)
     * [Checking whether a mutation applied](#checking-whether-a-mutation-applied)
@@ -103,7 +102,28 @@ If any condition fails, then all operations will be aborted
 
 ## Quick Start (running locally)
 
-### Docker compose:
+The first step is to create the following topics in Kafka:
+
+1. `firescroll_{namespace}_mutations`
+2. `firescroll_{namespace}_partitions`
+
+### Mutations Topic
+
+The mutations topic is used to manage all mutations (Put and Delete) that are applies to the data. It is important to set this to a partition count that is sufficient for your scale, as this cannot be changed later (nodes will refuse to start as they no longer know where data exists in). With Redpanda a partition is pretty powerful, so using are relatively high number (a few partitions per core) will cover you for a long time. For production at scale put as many topics as cores you ever intend to have in the Redpanda cluster.
+
+For example, if you are using Redpanda it might look like:
+
+```
+rpk topic create firescroll_testns_mutations
+rpk topic add-partitions firescroll_testns_mutations --num 3 # using 4 total partitions
+rpk topic create firescroll_testns_partitions
+```
+
+### Partitions Topic
+
+The partitions topic is used to record the first found topic count, and allows nodes to check against this count so that they can crash if something changes (because now we don't know where data is). While the actual partitions are checked against in real time, this serves as an extra dummy check in case you change the partition count and update the env vars (since data is not currently re-partitioned). So it's just an extra redundancy check and only ever (intentionally) writes one record, and otherwise is read on node startup.
+
+### Run with Docker compose:
 
 ```
 docker compose up -d
@@ -112,7 +132,7 @@ bash setup.sh
 
 Then get and replace minio keys in the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` env vars for `firescroll-1` and `firescroll-2` by visiting `http://localhost:9001` and creating credentials in the Minio dashboard to use with the bucket `testbucket` that was automatically created.
 
-### Or build locally:
+### Run with a local build:
 
 Need:
 1. Go
@@ -144,29 +164,6 @@ bash down.sh
 ```
 
 to clean up the docker compose volumes.
-
-## Setup
-
-The first step is to create the following topics in Kafka:
-
-1. `firescroll_{namespace}_mutations`
-2. `firescroll_{namespace}_partitions`
-
-### Mutations Topic
-
-The mutations topic is used to manage all mutations (Put and Delete) that are applies to the data. It is important to set this to a partition count that is sufficient for your scale, as this cannot be changed later (nodes will refuse to start as they no longer know where data exists in). With Redpanda a partition is pretty powerful, so using are relatively high number (a few partitions per core) will cover you for a long time. For production at scale put as many topics as cores you ever intend to have in the Redpanda cluster.
-
-For example, if you are using Redpanda it might look like:
-
-```
-rpk topic create firescroll_testns_mutations
-rpk topic add-partitions firescroll_testns_mutations --num 3 # using 4 total partitions
-rpk topic create firescroll_testns_partitions
-```
-
-### Partitions Topic
-
-The partitions topic is used to record the first found topic count, and allows nodes to check against this count so that they can crash if something changes (because now we don't know where data is). While the actual partitions are checked against in real time, this serves as an extra dummy check in case you change the partition count and update the env vars (since data is not currently re-partitioned). So it's just an extra redundancy check and only ever (intentionally) writes one record, and otherwise is read on node startup.
 
 ## Configuration
 
