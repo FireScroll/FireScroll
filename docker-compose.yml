@@ -165,6 +165,7 @@ services:
       PRETTY: 1
       NAMESPACE: testns
       REPLICA_GROUP: testrg
+      REGION: local
       INSTANCE_ID: firescroll-1
       PARTITIONS: 2
       TOPIC_RETENTION_MS: 10080000
@@ -202,6 +203,7 @@ services:
       PRETTY: 1
       NAMESPACE: testns
       REPLICA_GROUP: testrg
+      REGION: local
       INSTANCE_ID: firescroll-2
       PARTITIONS: 2
       TOPIC_RETENTION_MS: 10080000
