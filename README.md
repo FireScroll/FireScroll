@@ -49,6 +49,7 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
   * [Architecture](#architecture)
   * [Performance](#performance)
   * [Recommended Redpanda/Kafka Settings](#recommended-redpandakafka-settings)
+    * [Note on Upstash](#note-on-upstash)
 <!-- TOC -->
 
 ## Features
@@ -416,3 +417,7 @@ The extreme performance of partition-level operations illuminates how the system
 ## Recommended Redpanda/Kafka Settings
 
 Make sure that the `group_max_session_timeout_ms` and `group_min_session_timeout_ms` range in Redpanda (Kafka uses `.` instead of `_`) allows for your `KAFKA_SESSION_MS` env var value (default `60000`). Redpanda uses a `30000` max so it will need to be adjusted.
+
+### Note on Upstash
+
+Upstash does not expose access to their admin API, and therefore FireScroll cannot be used with Upstash. The Kafka admin API is required so that we can discover partition mappings, and without access we cannot know what partitions the current node is mapped to.
