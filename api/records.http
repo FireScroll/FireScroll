@@ -1,3 +1,6 @@
+### Get ready status
+GET http://localhost:8190/ready
+
 ### Put records
 POST http://localhost:8190/records/put
 Content-Type: application/json

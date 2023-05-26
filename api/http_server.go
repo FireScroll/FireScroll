@@ -11,6 +11,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/samber/lo"
 	"golang.org/x/net/http2"
 	"net"
 	"net/http"
@@ -100,6 +101,7 @@ func StartServer(port string, pm *partitions.PartitionManager, lc *log_consumer.
 	}()
 
 	e.GET("/up", Up)
+	e.GET("/ready", s.Ready)
 	e.POST("/records/:op", s.operationHandler)
 
 	return s, nil
@@ -124,4 +126,11 @@ func NewTimeoutMiddleware(timeout time.Duration) echo.MiddlewareFunc {
 
 func Up(c echo.Context) error {
 	return c.String(http.StatusOK, "ok")
+}
+
+func (h *HTTPServer) Ready(c echo.Context) error {
+	return c.String(
+		lo.Ternary(h.lc.Ready, http.StatusOK, http.StatusInternalServerError),
+		lo.Ternary(h.lc.Ready, "ok", "no partitions"),
+	)
 }

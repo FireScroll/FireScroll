@@ -90,9 +90,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(utils.Env_SleepSeconds))
 	defer cancel()
 
-	err = gm.Shutdown()
-	if err != nil {
-		logger.Error().Err(err).Msg("error shutting down gossip manager, other nodes might take some extra time to evict this node but otherwise it's fine")
+	if gm != nil {
+		err = gm.Shutdown()
+		if err != nil {
+			logger.Error().Err(err).Msg("error shutting down gossip manager, other nodes might take some extra time to evict this node but otherwise it's fine")
+		}
 	}
 
 	g = errgroup.Group{}

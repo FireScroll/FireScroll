@@ -39,6 +39,7 @@ type (
 		AdminClient      *kadm.Client
 		AdminTicker      *time.Ticker
 		NumPartitions    int64
+		Ready            bool
 
 		shuttingDown bool
 		closeChan    chan struct{}
@@ -65,7 +66,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 		closeChan:        make(chan struct{}, 1),
 	}
 	partitionTopic := formatPartitionTopic(namespace)
-	logger.Debug().Msgf("using mutation log %s and partition log %s", consumer.MutationTopic, partitionTopic)
+	logger.Debug().Msgf("using mutation log %s and partition log %s for seeds %+v", consumer.MutationTopic, partitionTopic, seeds)
 	opts := []kgo.Opt{
 		kgo.SeedBrokers(seeds...),
 		kgo.ClientID("firescroll"),
@@ -77,12 +78,14 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 		//kgo.DisableAutoCommit(), // TODO: See comment, need listeners
 	}
 	if utils.Env_KafkaUsername != "" && utils.Env_KafkaPassword != "" {
+		logger.Debug().Msg("using kafka auth")
 		opts = append(opts, kgo.SASL(scram.Auth{
 			User: utils.Env_KafkaUsername,
 			Pass: utils.Env_KafkaPassword,
 		}.AsSha256Mechanism()))
 	}
 	if utils.Env_KafkaTLS {
+		logger.Debug().Msg("using kafka TLS")
 		opts = append(opts, kgo.DialTLSConfig(&tls.Config{}))
 	}
 	cl, err := kgo.NewClient(
@@ -261,6 +264,7 @@ func (consumer *LogConsumer) topicInfoLoop() {
 
 	assigned, _ := member.Assigned.AsConsumer()
 	if len(assigned.Topics) == 0 {
+		consumer.Ready = false
 		logger.Warn().Interface("assigned", assigned).Msg("did not find any assigned topics, can't make changes")
 		return
 	}
@@ -322,6 +326,7 @@ func (consumer *LogConsumer) topicInfoLoop() {
 			mutationTopic: news,
 		})
 		logger.Debug().Msgf("resumed partitions %+v", news)
+		consumer.Ready = true
 	}
 	if len(gones) > 0 {
 		logger.Info().Msgf("dropped partitions: %+v", gones)

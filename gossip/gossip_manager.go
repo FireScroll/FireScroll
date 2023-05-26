@@ -49,6 +49,10 @@ type Node struct {
 }
 
 func NewGossipManager(pm *partitions.PartitionManager) (gm *Manager, err error) {
+	if utils.Env_AdvertiseAddr == "" {
+		logger.Warn().Msg("ADVERTISE_ADDR not provided, disabling gossip")
+		return nil, nil
+	}
 	advertiseHost, advertisePort, err := net.SplitHostPort(utils.Env_AdvertiseAddr)
 	if err != nil {
 		return nil, fmt.Errorf("error splitting advertise address: %w", err)

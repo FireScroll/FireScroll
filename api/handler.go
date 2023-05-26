@@ -158,6 +158,10 @@ func (s *HTTPServer) handleGet(c echo.Context) error {
 		partition := p
 		keys := k
 		g.Go(func() error {
+			if s.gm == nil {
+				logger.Error().Any("remoteKeys", remoteKeys).Msgf("I just tried to read remote keys but I'm not connected to gossip, aborting remote read")
+				return nil
+			}
 			addr, err := s.gm.GetRandomRemotePartition(partition)
 			if errors.Is(err, gossip.ErrNoRemotePartitions) {
 				logger.Warn().Msgf("did not get any remote addresses for partition %d, it probably shut down and the partition has not been reassigned yet", partition)
@@ -252,11 +256,15 @@ func (s *HTTPServer) handleList(c echo.Context) error {
 			return fmt.Errorf("error in pm.ListRecords: %w", err)
 		}
 	} else {
-		addr, err := s.gm.GetRandomRemotePartition(part)
-		if err != nil {
-			return fmt.Errorf("error in GetRandomRemotePartition: %w", err)
+		if s.gm == nil {
+			logger.Error().Int32("part", part).Msg("I tried to list a remote part but I am not connected to gossip, returning nothing")
+		} else {
+			addr, err := s.gm.GetRandomRemotePartition(part)
+			if err != nil {
+				return fmt.Errorf("error in GetRandomRemotePartition: %w", err)
+			}
+			listRes, err = s.doRemoteOperation(c.Request().Context(), addr, partitions.OperationList, reqBody)
 		}
-		listRes, err = s.doRemoteOperation(c.Request().Context(), addr, partitions.OperationList, reqBody)
 	}
 
 	res := GetRes{
