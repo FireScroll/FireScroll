@@ -12,6 +12,9 @@ var (
 	Env_KafkaSessionMs   = MustEnvOrDefaultInt64("KAFKA_SESSION_MS", 60_000)
 	Env_NumPartitions    = MustEnvInt64("PARTITIONS")
 	Env_KafkaSeeds       = MustEnv("KAFKA_SEEDS")
+	Env_KafkaUsername    = os.Getenv("KAFKA_USER")
+	Env_KafkaPassword    = os.Getenv("KAFKA_PASS")
+	Env_KafkaTLS         = os.Getenv("KAFKA_TLS") == "1"
 
 	Env_APIPort       = EnvOrDefault("API_PORT", "8190")
 	Env_InternalPort  = EnvOrDefault("INTERNAL_PORT", "8191")

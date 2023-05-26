@@ -2,6 +2,7 @@ package log_consumer
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"golang.org/x/sync/errgroup"
 	"math/rand"
 	"time"
@@ -64,15 +66,27 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	}
 	partitionTopic := formatPartitionTopic(namespace)
 	logger.Debug().Msgf("using mutation log %s and partition log %s", consumer.MutationTopic, partitionTopic)
-	cl, err := kgo.NewClient(
+	opts := []kgo.Opt{
 		kgo.SeedBrokers(seeds...),
 		kgo.ClientID("firescroll"),
 		kgo.InstanceID(utils.Env_InstanceID),
 		kgo.ConsumerGroup(consumerGroup),
 		kgo.ConsumeTopics(consumer.MutationTopic),
 		kgo.RecordPartitioner(kgo.StickyKeyPartitioner(nil)), // force murmur2, same as in utils
-		kgo.SessionTimeout(time.Millisecond*time.Duration(sessionMS)),
+		kgo.SessionTimeout(time.Millisecond * time.Duration(sessionMS)),
 		//kgo.DisableAutoCommit(), // TODO: See comment, need listeners
+	}
+	if utils.Env_KafkaUsername != "" && utils.Env_KafkaPassword != "" {
+		opts = append(opts, kgo.SASL(scram.Auth{
+			User: utils.Env_KafkaUsername,
+			Pass: utils.Env_KafkaPassword,
+		}.AsSha256Mechanism()))
+	}
+	if utils.Env_KafkaTLS {
+		opts = append(opts, kgo.DialTLSConfig(&tls.Config{}))
+	}
+	cl, err := kgo.NewClient(
+		opts...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error in kgo.NewClient (mutations): %w", err)
@@ -83,10 +97,22 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 
 	// Verify the partitions
 	// First we should try to read from it
-	partitionsClient, err := kgo.NewClient(
+	partOpts := []kgo.Opt{
 		kgo.SeedBrokers(seeds...),
 		kgo.ConsumeTopics(partitionTopic),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()), // always consume the first record
+	}
+	if utils.Env_KafkaUsername != "" && utils.Env_KafkaPassword != "" {
+		partOpts = append(partOpts, kgo.SASL(scram.Auth{
+			User: utils.Env_KafkaUsername,
+			Pass: utils.Env_KafkaPassword,
+		}.AsSha256Mechanism()))
+	}
+	if utils.Env_KafkaTLS {
+		partOpts = append(partOpts, kgo.DialTLSConfig(&tls.Config{}))
+	}
+	partitionsClient, err := kgo.NewClient(
+		partOpts...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error in kgo.NewClient (partitions): %w", err)
@@ -101,7 +127,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	records, err := simplePollRecords(ctx, partitionsClient)
 
 	if errors.Is(err, context.DeadlineExceeded) || len(records) == 0 {
-		logger.Info().Msg("did not find existing records topic, creating")
+		logger.Info().Msg("did not find existing partitions topic record, creating")
 		// Create the records and poll again
 		pm := PartitionMessage{NumPartitions: utils.Env_NumPartitions}
 		pmBytes, err := json.Marshal(pm)
@@ -215,6 +241,7 @@ func (consumer *LogConsumer) topicInfoLoop() {
 		return item.MemberID == memberID
 	})
 	if !ok {
+		logger.Debug().Interface("resp", resp).Msg("Got admin describe groups response")
 		logger.Warn().Msg("did not find myself in group metadata, cannot continue with partition mappings until I know what partitions I have")
 		return
 	}
