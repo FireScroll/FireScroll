@@ -426,6 +426,7 @@ Each node was a performance-2x (2vCPU, 4GB ram) size.
 _test: [https://github.com/danthegoodman1/FireScrollFlyIOTest](https://github.com/danthegoodman1/FireScrollFlyIOTest)_
 
 ![firescroll-fly.jpg](assets/firescroll-fly.jpg)
+![firescroll-cpu](assets/firescroll-cpu.png)
 
 Due to account limits I was only able to load it up to ~225 req/s per node.
 
@@ -434,6 +435,7 @@ Some immediate observations:
 2. Restricting the resources available increases latencies. On my 2019 MBP with 16 threads and 64GB ram I observed p99 get ~1.2ms
 3. Fetching more records at once increases HTTP latency but reduces per-partition latency (this is predictable). You can see where I switched the test from fetching 3 records to 1 record.
 4. Performance is still very good even when virtualized, no memory caching, and on fewer resources
+5. CPU usage remained very low despite significant load
 
 
 ## Recommended Redpanda/Kafka Settings
