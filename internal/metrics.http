@@ -1,0 +1,2 @@
+### Get metrics
+GET http://localhost:8191/metrics

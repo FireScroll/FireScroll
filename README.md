@@ -48,6 +48,7 @@ FireScroll tackles a very specific use-case, and is meant to be used in addition
   * [Backups and Snapshotting](#backups-and-snapshotting)
   * [Architecture](#architecture)
   * [Performance](#performance)
+    * [Fly.io 32 region test](#flyio-32-region-test)
   * [Recommended Redpanda/Kafka Settings](#recommended-redpandakafka-settings)
     * [Note on Upstash](#note-on-upstash)
 <!-- TOC -->
@@ -413,6 +414,26 @@ As you can tell in the difference between HTTP handler and Partition-level perfo
 There is also plenty of optimization to be had by using a more efficient serialization format and serializer (default Go JSON is known to be slow), collapsing requests to remote partitions, and more!
 
 The extreme performance of partition-level operations illuminates how the system optimizes for concurrency and stays performant under load, as very little time is actually spent competing for storage.
+
+### Fly.io 32 region test
+
+A performance test was run in 32 regions around the world on fly.io. Nodes each managed 3 partitions, and 2 tests were performed:
+1. Reading 3 records, each from a different partition in one read request
+2. Read a single record (1 partition)
+
+Each node was a performance-2x (2vCPU, 4GB ram) size.
+
+
+![firescroll-fly.jpg](assets/firescroll-fly.jpg)
+
+Due to account limits I was only able to load it up to ~225 req/s per node.
+
+Some immediate observations:
+1. Fly.io disks are relatively high latency (my 2019 MBP p99 partition latencies are <75us)
+2. Restricting the resources available increases latencies. On my 2019 MBP with 16 threads and 64GB ram I observed p99 get ~1.2ms
+3. Fetching more records at once increases HTTP latency but reduces per-partition latency (this is predictable). You can see where I switched the test from fetching 3 records to 1 record.
+4. Performance is still very good even when virtualized, no memory caching, and on fewer resources
+
 
 ## Recommended Redpanda/Kafka Settings
 
