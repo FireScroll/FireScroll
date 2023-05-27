@@ -209,6 +209,7 @@ func (s *HTTPServer) doRemoteOperation(ctx context.Context, addr string, op part
 	if err != nil {
 		return nil, fmt.Errorf("error in http.Do: %w", err)
 	}
+	defer res.Body.Close()
 
 	resBytes, err := io.ReadAll(res.Body)
 	if err != nil {
