@@ -1,4 +1,4 @@
-module github.com/danthegoodman1/FireScroll
+module github.com/FireScroll/FireScroll
 
 go 1.20
 

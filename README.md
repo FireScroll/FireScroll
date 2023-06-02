@@ -423,7 +423,7 @@ A performance test was run in 32 regions around the world on fly.io. Nodes each 
 
 Each node was a performance-2x (2vCPU, 4GB ram) size.
 
-_test: [https://github.com/danthegoodman1/FireScrollFlyIOTest](https://github.com/danthegoodman1/FireScrollFlyIOTest)_
+_test: [https://github.com/FireScroll/FireScrollFlyIOTest](https://github.com/FireScroll/FireScrollFlyIOTest)_
 
 ![firescroll-fly.jpg](assets/firescroll-fly.jpg)
 ![firescroll-cpu](assets/firescroll-cpu.png)
