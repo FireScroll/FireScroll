@@ -60,6 +60,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.REGISTRY }}/FireScroll/${{ env.IMAGE_NAME }}:latest,${{ env.REGISTRY }}/FireScroll/${{ env.IMAGE_NAME }}:${{ steps.previoustag.outputs.tag }}
+          tags: ${{ env.REGISTRY }}/firescroll/${{ env.IMAGE_NAME }}:latest,${{ env.REGISTRY }}/firescroll/${{ env.IMAGE_NAME }}:${{ steps.previoustag.outputs.tag }}
           platforms: linux/amd64
           # ,linux/arm64
