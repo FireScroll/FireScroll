@@ -419,7 +419,7 @@ The extreme performance of partition-level operations illuminates how the system
 
 Admittedly not the greatest scale test in the world (was quick and dirty), so don't read too much into this 😅.
 
-A test was run in 32 regions around the world on fly.io. Nodes each managed 3 partitions, and 2 tests were performed:
+A test was run 50 nodes across in 32 regions around the world on fly.io. Every region had at least 1 node, some had 2. Nodes each managed 3 partitions, and 2 tests were performed:
 1. Reading 3 records, each from a different partition in one read request
 2. Read a single record (1 partition)
 
