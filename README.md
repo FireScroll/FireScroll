@@ -439,6 +439,9 @@ Some immediate observations:
 4. Performance is still very good even when virtualized, no memory caching, and on fewer resources
 5. CPU usage remained very low despite significant load
 
+I would like to write a test that focuses on high node counts within a single region, with large replica groups. This is a more realistic test as regions don’t talk to each other, so we can test how requests are distributed in a high-density scenario.
+
+Follow [this issue](https://github.com/FireScroll/FireScroll/issues/47) for progress on that!
 
 ## Recommended Redpanda/Kafka Settings
 
