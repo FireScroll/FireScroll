@@ -430,7 +430,7 @@ _test: [https://github.com/FireScroll/FireScrollFlyIOTest](https://github.com/Fi
 ![firescroll-fly.jpg](assets/firescroll-fly.jpg)
 ![firescroll-cpu](assets/firescroll-cpu.png)
 
-Due to account limits I was only able to load it up to ~225 req/s per node from my laptop, as I wanted to use all nodes possible to serve requests and observe the behavior of high node counts.
+Due to account limits I was only able to load it up to ~225 req/s per node from my laptop, as I wanted to use all nodes possible to run FireScroll and observe the behavior of high node counts.
 
 Some immediate observations:
 1. Fly.io disks are relatively high latency (my 2019 MBP p99 partition latencies are <75us)
