@@ -417,7 +417,9 @@ The extreme performance of partition-level operations illuminates how the system
 
 ### Fly.io 32 region test
 
-A performance test was run in 32 regions around the world on fly.io. Nodes each managed 3 partitions, and 2 tests were performed:
+Admittedly not the greatest scale test in the world (was quick and dirty), so don't read too much into this 😅.
+
+A test was run in 32 regions around the world on fly.io. Nodes each managed 3 partitions, and 2 tests were performed:
 1. Reading 3 records, each from a different partition in one read request
 2. Read a single record (1 partition)
 
@@ -428,7 +430,7 @@ _test: [https://github.com/FireScroll/FireScrollFlyIOTest](https://github.com/Fi
 ![firescroll-fly.jpg](assets/firescroll-fly.jpg)
 ![firescroll-cpu](assets/firescroll-cpu.png)
 
-Due to account limits I was only able to load it up to ~225 req/s per node.
+Due to account limits I was only able to load it up to ~225 req/s per node from my laptop, as I wanted to use all nodes possible to serve requests and observe the behavior of high node counts.
 
 Some immediate observations:
 1. Fly.io disks are relatively high latency (my 2019 MBP p99 partition latencies are <75us)
