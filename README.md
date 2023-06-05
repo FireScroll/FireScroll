@@ -234,9 +234,9 @@ Checking whether the key `hey == ho`
       "pk": "pk1",
       "sk": "sk1",
       "data": {
-        "hey": "ho"
+        "hey": "no longer ho"
       },
-      "if": "data.hey == "ho"
+      "if": "data.hey == \"ho\""
     }
   ]
 }
