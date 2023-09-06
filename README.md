@@ -125,6 +125,8 @@ rpk topic create firescroll_testns_partitions
 
 The partitions topic is used to record the first found topic count, and allows nodes to check against this count so that they can crash if something changes (because now we don't know where data is). While the actual partitions are checked against in real time, this serves as an extra dummy check in case you change the partition count and update the env vars (since data is not currently re-partitioned). So it's just an extra redundancy check and only ever (intentionally) writes one record, and otherwise is read on node startup.
 
+This only needs to have one partition.
+
 ### Run with Docker compose:
 
 ```
