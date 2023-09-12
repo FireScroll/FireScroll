@@ -2,10 +2,12 @@ package log_consumer
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
+	"time"
+
 	"github.com/FireScroll/FireScroll/gologger"
 	"github.com/FireScroll/FireScroll/internal"
 	"github.com/FireScroll/FireScroll/partitions"
@@ -14,9 +16,8 @@ import (
 	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	"github.com/twmb/tlscfg"
 	"golang.org/x/sync/errgroup"
-	"math/rand"
-	"time"
 )
 
 var (
@@ -86,7 +87,13 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 	}
 	if utils.Env_KafkaTLS {
 		logger.Debug().Msg("using kafka TLS")
-		opts = append(opts, kgo.DialTLSConfig(&tls.Config{}))
+		tlsCfg, err := tlscfg.New(
+			tlscfg.MaybeWithDiskCA(utils.Env_KafkaTLSCAPath, tlscfg.ForClient),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error in kgo.NewClient (mutations.tls): %w", err)
+		}
+		opts = append(opts, kgo.DialTLSConfig(tlsCfg))
 	}
 	cl, err := kgo.NewClient(
 		opts...,
@@ -112,7 +119,14 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 		}.AsSha256Mechanism()))
 	}
 	if utils.Env_KafkaTLS {
-		partOpts = append(partOpts, kgo.DialTLSConfig(&tls.Config{}))
+		logger.Debug().Msg("using kafka TLS")
+		tlsCfg, err := tlscfg.New(
+			tlscfg.MaybeWithDiskCA(utils.Env_KafkaTLSCAPath, tlscfg.ForClient),
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error in kgo.NewClient (partitions.tls): %w", err)
+		}
+		partOpts = append(partOpts, kgo.DialTLSConfig(tlsCfg))
 	}
 	partitionsClient, err := kgo.NewClient(
 		partOpts...,
