@@ -2,6 +2,7 @@ package log_consumer
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -76,7 +77,7 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 		kgo.ConsumeTopics(consumer.MutationTopic),
 		kgo.RecordPartitioner(kgo.StickyKeyPartitioner(nil)), // force murmur2, same as in utils
 		kgo.SessionTimeout(time.Millisecond * time.Duration(sessionMS)),
-		//kgo.DisableAutoCommit(), // TODO: See comment, need listeners
+		// kgo.DisableAutoCommit(), // TODO: See comment, need listeners
 	}
 	if utils.Env_KafkaUsername != "" && utils.Env_KafkaPassword != "" {
 		logger.Debug().Msg("using kafka auth")
@@ -86,14 +87,19 @@ func NewLogConsumer(ctx context.Context, namespace, consumerGroup string, seeds 
 		}.AsSha256Mechanism()))
 	}
 	if utils.Env_KafkaTLS {
-		logger.Debug().Msg("using kafka TLS")
-		tlsCfg, err := tlscfg.New(
-			tlscfg.MaybeWithDiskCA(utils.Env_KafkaTLSCAPath, tlscfg.ForClient),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("error in kgo.NewClient (mutations.tls): %w", err)
+		if utils.Env_KafkaTLSCAPath != "" {
+			logger.Debug().Msgf("using kafka TLS with CA path %s", utils.Env_KafkaTLSCAPath)
+			tlsCfg, err := tlscfg.New(
+				tlscfg.MaybeWithDiskCA(utils.Env_KafkaTLSCAPath, tlscfg.ForClient),
+			)
+			if err != nil {
+				return nil, fmt.Errorf("error in kgo.NewClient (mutations.tls): %w", err)
+			}
+			opts = append(opts, kgo.DialTLSConfig(tlsCfg))
+		} else {
+			logger.Debug().Msg("using kafka TLS")
+			opts = append(opts, kgo.DialTLSConfig(&tls.Config{}))
 		}
-		opts = append(opts, kgo.DialTLSConfig(tlsCfg))
 	}
 	cl, err := kgo.NewClient(
 		opts...,
@@ -269,12 +275,12 @@ func (consumer *LogConsumer) topicInfoLoop() {
 	})
 
 	// TODO: Add topic change abort back in
-	//currentVal := atomic.LoadInt64(&consumer.NumPartitions)
-	//if currentVal != partitionCount {
+	// currentVal := atomic.LoadInt64(&consumer.NumPartitions)
+	// if currentVal != partitionCount {
 	//	// We can't continue now
 	//	logger.Fatal().Msgf("number of partitions changed in Kafka topic! I have %d, but topic has %d aborting so it's not longer safe!!!!!", consumer.NumPartitions, partitionCount)
 	//	atomic.StoreInt64(&consumer.NumPartitions, partitionCount)
-	//}
+	// }
 
 	assigned, _ := member.Assigned.AsConsumer()
 	if len(assigned.Topics) == 0 {
