@@ -15,6 +15,7 @@ var (
 	Env_KafkaUsername    = os.Getenv("KAFKA_USER")
 	Env_KafkaPassword    = os.Getenv("KAFKA_PASS")
 	Env_KafkaTLS         = os.Getenv("KAFKA_TLS") == "1"
+	Env_KafkaTLSCAPath   = os.Getenv("KAFKA_TLS_CA_PATH")
 
 	Env_APIPort       = EnvOrDefault("API_PORT", "8190")
 	Env_InternalPort  = EnvOrDefault("INTERNAL_PORT", "8191")
