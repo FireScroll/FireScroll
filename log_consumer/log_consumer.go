@@ -250,7 +250,9 @@ func (consumer *LogConsumer) pollTopicInfo() {
 }
 
 func (consumer *LogConsumer) topicInfoLoop() {
-	resp, err := consumer.AdminClient.DescribeGroups(context.Background(), consumer.ConsumerGroup)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+	defer cancel()
+	resp, err := consumer.AdminClient.DescribeGroups(ctx, consumer.ConsumerGroup)
 	if err != nil {
 		logger.Error().Err(err).Msg("error describing groups")
 		return
