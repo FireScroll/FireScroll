@@ -75,10 +75,9 @@ func (s *HTTPServer) handleMutation(c echo.Context) error {
 			logger.Fatal().Err(err).Msg("error marshalling json, exiting")
 		}
 		record := &kgo.Record{
-			Key:     []byte(mut.Pk),
-			Value:   jsonB,
-			Topic:   s.lc.MutationTopic,
-			Context: c.Request().Context(),
+			Key:   []byte(mut.Pk),
+			Value: jsonB,
+			Topic: s.lc.MutationTopic,
 		}
 		partID := utils.GetPartition(mut.Pk)
 		_, exists := partMap[partID]
