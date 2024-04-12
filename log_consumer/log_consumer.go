@@ -378,7 +378,6 @@ func (lc *LogConsumer) launchPollRecordLoop() {
 var ErrPollFetches = errors.New("error polling fetches")
 
 func (lc *LogConsumer) pollRecords(c context.Context) error {
-	// maybe use PollRecords?
 	ctx, cancel := context.WithTimeout(c, time.Second*5)
 	defer cancel()
 	fetches := lc.Client.PollFetches(ctx)
