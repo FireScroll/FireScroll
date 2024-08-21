@@ -1,4 +1,8 @@
-# FireScroll 🔥📜
+<h1>
+📜<img src="https://media.tenor.com/K3j9pwWlME0AAAAi/fire-flame.gif" width="36px" />
+FireScroll
+<img src="https://media.tenor.com/K3j9pwWlME0AAAAi/fire-flame.gif" width="36px" />📜
+</h1>
 
 The config database to deploy everywhere, without the complexity of other multi region dbs.
 
