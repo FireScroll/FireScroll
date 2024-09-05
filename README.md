@@ -21,6 +21,8 @@ Useful cases that can tolerate sub-second cache-like behavior such as:
 
 FireScroll tackles a very specific use-case, and is meant to be used in addition to a traditional OLTP DB like CockroachDB or Scylla.
 
+https://www.redpanda.com/blog/multi-region-deployment-redpanda-firescroll
+
 <!-- TOC -->
   * [Features](#features)
   * [Quick Notes](#quick-notes)
